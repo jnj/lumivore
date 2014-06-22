@@ -19,6 +19,7 @@ class Indexer(val pathStream: PathStream, output: Channel[IndexRecord]) {
     } else {
       val normalizedPath = path.toAbsolutePath.toString.toLowerCase
       if (suffixes.exists(normalizedPath.endsWith)) {
+        digest.reset()
         val hash = createDigestHash(path)
         val record = IndexRecord(Paths.get(normalizedPath), hash)
         output.publish(record)
