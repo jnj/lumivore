@@ -2,13 +2,12 @@ package org.joshjoyce.lumivore.db
 
 import java.sql._
 import org.joshjoyce.lumivore.index.IndexRecord
-import org.joshjoyce.lumivore.index.IndexRecord
 import java.nio.file.Paths
 
 class SqliteDatabase {
 
   Class.forName("org.sqlite.JDBC")
-  private var conn: Connection = _
+  private implicit var conn: Connection = _
   private var connected = false
 
   def connect() {
@@ -32,25 +31,15 @@ class SqliteDatabase {
       """
         |SELECT ID, FILE_PATH, HASH FROM PHOTOS;
       """.stripMargin
-    var stmt: PreparedStatement = null
-    var results: ResultSet = null
-    var list = List.empty[IndexRecord]
-    try {
-      stmt = conn.prepareStatement(sql)
-      results = stmt.executeQuery()
-      while (results.next()) {
-        val i = IndexRecord(Paths.get(results.getString("FILE_PATH")), results.getString("HASH"))
-        list = i :: list
-      }
-    } finally {
-      if (results != null) {
-        results.close()
-      }
-      if (stmt != null) {
-        stmt.close()
+    withQuery(sql) {
+      r => {
+        var list = List.empty[IndexRecord]
+        while (r.next()) {
+          val i = IndexRecord(Paths.get(r.getString("FILE_PATH")), r.getString("HASH"))
+          list = i :: list
+        }
       }
     }
-    list
   }
 
   def insert(record: IndexRecord) {
@@ -73,13 +62,41 @@ class SqliteDatabase {
   }
 
   def executeUpdate(sql: String) {
-    var statement: Statement = null
+    withStatement {
+      _.executeUpdate(sql)
+    }
+  }
+
+  private def withQuery[A](sql: String)(f: ResultSet => A) = {
+    var stmt: PreparedStatement = null
     try {
-      statement = conn.createStatement()
-      statement.executeUpdate(sql)
+      stmt = conn.prepareStatement(sql)
+      withResultSet(stmt.executeQuery())(f)
     } finally {
-      if (statement != null) {
-        statement.close()
+      if (stmt != null) {
+        stmt.close()
+      }
+    }
+  }
+
+  private def withResultSet[A](r: ResultSet)(f: ResultSet => A) = {
+    try {
+      f(r)
+    } finally {
+      if (r != null) {
+        r.close()
+      }
+    }
+  }
+
+  private def withStatement[A](f: Statement => A) = {
+    var stmt: Statement = null
+    try {
+      stmt = conn.createStatement()
+      f(stmt)
+    } finally {
+      if (stmt != null) {
+        stmt.close()
       }
     }
   }
