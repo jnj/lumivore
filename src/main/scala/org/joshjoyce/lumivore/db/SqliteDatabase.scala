@@ -1,6 +1,6 @@
 package org.joshjoyce.lumivore.db
 
-import java.sql.{DriverManager, Connection}
+import java.sql.{Statement, DriverManager, Connection}
 
 class SqliteDatabase {
   Class.forName("org.sqlite.JDBC")
@@ -15,7 +15,18 @@ class SqliteDatabase {
       """
         |CREATE TABLE PHOTOS (ID INTEGER PRIMARY KEY, FILE_PATH TEXT UNIQUE, HASH TEXT);
       """.stripMargin
-    val statement = conn.createStatement()
-    statement.executeUpdate(sql)
+    executeUpdate(sql)
+  }
+
+  def executeUpdate(sql: String) {
+    var statement: Statement = null
+    try {
+      statement = conn.createStatement()
+      statement.executeUpdate(sql)
+    } finally {
+      if (statement != null) {
+        statement.close()
+      }
+    }
   }
 }
