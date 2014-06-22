@@ -38,6 +38,7 @@ class SqliteDatabase {
           val i = IndexRecord(Paths.get(r.getString("FILE_PATH")), r.getString("HASH"))
           list = i :: list
         }
+        list
       }
     }
   }
