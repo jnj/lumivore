@@ -26,8 +26,7 @@ object Main {
 ////    val dir = args(0)
 ////    val paths = new DirectoryPathStream(new File(dir))
 ////    val outputChannel = new MemoryChannel[IndexRecord]
-//    val database = new SqliteDatabase
-//    database.connect()
+
 ////    database.createTables()
 ////
 ////    val fiber = new ThreadFiber()

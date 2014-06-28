@@ -4,7 +4,7 @@ import org.jetlang.core.{DisposingExecutor, Callback}
 import org.jetlang.channels.Channel
 
 object Implicits {
-  implicit def lambdaToJetlangCallback[A, Nothing](f: (A) => Any): Callback[A] = {
+  implicit def lambdaToJetlangCallback[A](f: (A) => Any): Callback[A] = {
     new Callback[A] {
       override def onMessage(p1: A) = f(p1)
     }
