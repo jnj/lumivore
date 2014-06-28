@@ -5,3 +5,5 @@ project
 lib
 .idea
 photos.db
+bootstrap*
+glyphicons*
