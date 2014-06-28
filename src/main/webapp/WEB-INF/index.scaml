@@ -1,8 +1,15 @@
 -@ val records: List[String]
-%h1 Welcome to Lumivore!
-Indexed:
-%br
+-@ val duplicates: List[String]
+%h2 Indexed
 - records.foreach
   - r =>
     #{r}
     %br
+%h2 Duplicates
+- if (duplicates.isEmpty)
+  There are no duplicates.
+- else
+  - duplicates.foreach
+    - d =>
+      #{d}
+      %br

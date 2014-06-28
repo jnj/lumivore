@@ -11,7 +11,13 @@ class Lumivore extends ScalatraFilter with ScalateSupport {
   get("/") {
     contentType = "text/html"
     val records = database.queryPhotos().map(_.toString)
-    scaml("/index.scaml", "records" -> records)
+    val dupes = database.getDuplicates()
+    scaml("/index.scaml", "records" -> records, "duplicates" -> dupes)
+  }
+
+  get("/index") {
+    contentType = "text/html"
+    scaml("/indexer.scaml")
   }
 
 }

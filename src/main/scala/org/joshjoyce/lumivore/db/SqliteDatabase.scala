@@ -32,15 +32,36 @@ class SqliteDatabase {
         |SELECT ID, FILE_PATH, HASH FROM PHOTOS;
       """.stripMargin
     withQuery(sql) {
-      r => {
-        var list = List.empty[IndexRecord]
-        while (r.next()) {
-          val i = IndexRecord(Paths.get(r.getString("FILE_PATH")), r.getString("HASH"))
-          list = i :: list
-        }
-        list
+      r => mapResults(r) {
+        s => IndexRecord(Paths.get(s.getString("FILE_PATH")), s.getString("HASH"))
       }
     }
+  }
+
+  def getDuplicates() = {
+    ensureConnected()
+    val sql =
+      """
+        |SELECT PATHS FROM (
+        |   SELECT GROUP_CONCAT(FILE_PATH, ';') AS PATHS, COUNT(FILE_PATH) AS TOTAL FROM PHOTOS GROUP BY HASH
+        |) WHERE TOTAL > 1;
+      """.stripMargin
+    withQuery(sql) {
+      r => mapResults(r) {
+        s => s.getString("PATHS")
+      }
+    }
+  }
+
+  def mapResults[A](r: ResultSet)(f: (ResultSet) => A): List[A] = {
+    var results = List.empty[A]
+
+    while (r.next()) {
+      val x = f(r)
+      results = x :: results
+    }
+
+    results.reverse
   }
 
   def insert(record: IndexRecord) {
