@@ -14,6 +14,8 @@ libraryDependencies += "org.xerial" % "sqlite-jdbc" % "3.7.15-M1"
 
 libraryDependencies += "org.scalatra" %% "scalatra" % "2.3.0"
 
+libraryDependencies += "org.scalatra" %% "scalatra-scalate" % "2.3.0"
+
 libraryDependencies += "org.scalatra.scalate" %% "scalate-web" % "1.7.0"
 
 libraryDependencies += "javax.servlet" % "javax.servlet-api" % "3.0.1" % "provided"

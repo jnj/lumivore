@@ -1,11 +1,13 @@
 package org.joshjoyce.lumivore.web
 
 import org.scalatra.ScalatraFilter
+import org.scalatra.scalate.ScalateSupport
 
-class Lumivore extends ScalatraFilter {
+class Lumivore extends ScalatraFilter with ScalateSupport {
 
   get("/") {
-    <h1>Hi there!</h1>
+    contentType = "text/html"
+    scaml("/index.scaml")
   }
 
 }
