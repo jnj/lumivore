@@ -8,6 +8,10 @@
     %meta{:name => "author", :content  => ""}
     %title Lumivore
     %link{:href => "/css/bootstrap.min.spacelab.css", :rel => "stylesheet"}
+    %script{:src => "https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"}
+    %script{:src => "/js/bootstrap.min.js"}
+    %script{:src => "/js/docs.min.js"}
+    %script{:src => "/js/jquery.atmosphere.js"}
   %body{:role => "document"}
     // Fixed navbar
     %div.navbar.navbar-default.navbar-static-top{:role => "navigation"}
@@ -26,6 +30,3 @@
     %div.container.theme-showcase{:role => "main"}
       %div.contents.page-header
         #{unescape(body)}
-    %script{:src => "https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"}
-    %script{:src => "/js/bootstrap.min.js"}
-    %script{:src => "/js/docs.min.js"}

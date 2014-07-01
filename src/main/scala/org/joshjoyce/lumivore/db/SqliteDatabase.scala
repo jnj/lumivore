@@ -21,6 +21,9 @@ class SqliteDatabase {
       """
         |DROP TABLE IF EXISTS PHOTOS;
         |CREATE TABLE PHOTOS (ID INTEGER PRIMARY KEY, FILE_PATH TEXT UNIQUE, HASH TEXT);
+        |
+        |DROP TABLE IF EXISTS GLACIER_UPLOADS;
+        |CREATE TABLE GLACIER_UPLOADS (HASH TEXT PRIMARY KEY, VAULT TEXT, ARCHIVE_ID TEXT);
       """.stripMargin
     executeUpdate(sql)
   }
