@@ -11,6 +11,10 @@ object Implicits {
   }
 
   implicit def enrichChannel[A](c: Channel[A]) = new RichMemoryChannel[A](c)
+
+  implicit def closureToRunnable(f: () => Any) = new Runnable {
+    override def run() = f()
+  }
 }
 
 class RichMemoryChannel[A](val underlying: Channel[A]) {

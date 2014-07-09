@@ -12,10 +12,6 @@
   $(function () {
     "use strict";
 
-    var header = $('#header');
-    var content = $('#content');
-    var input = $('#input');
-    var status = $('#status');
     var myName = false;
     var author = null;
     var logged = false;
@@ -39,6 +35,15 @@
     };
 
     request.onOpen = function(response) {
+        transport = response.transport;
+
+        if (response.transport == "local") {
+          subSocket.pushLocal("Name?");
+        }
+    };
+
+    request.onReconnect = function (rq, rs) {
+      socket.info("Reconnecting");
     };
 
     request.onTransportFailure = function(errorMsg, request) {
@@ -51,6 +56,7 @@
 
     request.onMessage = function (response) {
       var message = response.responseBody;
+      alert("I got: " + message);
       try {
         var json = jQuery.parseJSON(message);
       } catch (e) {
