@@ -1,77 +1,42 @@
 %h2 Add to Index
-%form{:role => "form"}
+%form#indexForm{:role => "form"}
   .form-group
     %label{:for => "filePath"} File or Directory
     %input#filePath{:type => "file"}
     %br
     .progress
-      .progress-bar.progress-bar-striped.active{:role => "progressbar", "aria-valuenow" => "10", "aria-valuemin" => "0", "aria-valuemax" => "100", :style => "width: 60%;"}
-        %span 60 Complete
-  %button.btn.btn-primary#submitButton{:type => "submit"} Submit
+      .progress-bar.progress-bar-striped.active#progBar{:role => "progressbar", "aria-valuenow" => "0", "aria-valuemin" => "0", "aria-valuemax" => "100", :style => "width: 0%;"}
+        %span#progText
+  .btn-group
+    %button.btn.btn-primary#submitButton{:type => "button"} Submit
+    %button.btn.btn-default#resetButton{:type => "button"} Reset
+  #statusContent
 :!javascript
   $(function () {
-    "use strict";
-
-    var myName = false;
-    var author = null;
-    var logged = false;
-    var socket = $.atmosphere;
-    var subSocket;
-    var transport = 'websocket';
+    var ws = new WebSocket('ws://localhost:8080/index-request');
+    ws.onopen = function() {};
+    ws.onclose = function() {};
+    var progBar = $("#progBar");
+    var statusContent = $("#statusContent");
 
     $('#submitButton').click(function () {
-      subSocket.push(jQuery.stringifyJSON({ author: 'me', message: 'hi there' }));
+      ws.send(jQuery.stringifyJSON({ author: 'me', message: 'hi there' }));
       return false;
     });
 
-    // We are now ready to cut the request
-    var request = {
-      url: '/index-request',
-      contentType : "application/json",
-      trackMessageLength : true,
-      shared : true,
-      transport : transport ,
-      fallbackTransport: 'long-polling'
+    $("#resetButton").click(function () {
+        $("#indexForm").reset();
+        progBar.attr("aria-valuenow", 0);
+        progBar.css("width", "0%");
+        statusContent.html('');
+    });
+
+    ws.onmessage = function (msg) {
+        var obj = $.parseJSON(msg.data);
+        progBar.attr("aria-valuenow", obj.percent);
+        progBar.css("width", obj.percent + "%");
+        statusContent.html(obj.file);
     };
-
-    request.onOpen = function(response) {
-        transport = response.transport;
-
-        if (response.transport == "local") {
-          subSocket.pushLocal("Name?");
-        }
-    };
-
-    request.onReconnect = function (rq, rs) {
-      socket.info("Reconnecting");
-    };
-
-    request.onTransportFailure = function(errorMsg, request) {
-      jQuery.atmosphere.info(errorMsg);
-        if (window.EventSource) {
-          request.fallbackTransport = "sse";
-          transport = "see";
-        }
-    };
-
-    request.onMessage = function (response) {
-      var message = response.responseBody;
-      alert("I got: " + message);
-      try {
-        var json = jQuery.parseJSON(message);
-      } catch (e) {
-        console.log('This doesn\'t look like a valid JSON: ', message.data);
-        return;
-      }
-
-      alert("received: " + json);
-    };
-
-    request.onClose = function(response) {
-      logged = false;
-    }
-
-    subSocket = socket.subscribe(request);
   });
 
 

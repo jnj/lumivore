@@ -10,11 +10,16 @@ class DirectoryPathStream(val dir: File) extends PathStream {
     if (d.isFile) {
       Stream(d.toPath)
     } else {
-      val children = d.listFiles().toStream
-      val x = for {
-        c <- children
-      } yield recurPaths(c)
-      x.flatten
+      val contents = d.listFiles()
+      if (contents == null) {
+        Stream.empty
+      } else {
+        val children = contents.toStream
+        val x = for {
+          c <- children
+        } yield recurPaths(c)
+        x.flatten
+      }
     }
   }
 }

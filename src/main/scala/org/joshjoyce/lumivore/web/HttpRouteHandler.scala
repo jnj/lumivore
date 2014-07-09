@@ -16,7 +16,7 @@ class HttpRouteHandler(templateEngine: TemplateEngine) extends HttpHandler {
   override def handleHttpRequest(request: HttpRequest, response: HttpResponse, control: HttpControl) = {
     val records = database.queryPhotos().map(_.toString)
     val dupes = database.getDuplicates()
-    val content = templateEngine.layout("WEB-INF/index.scaml", Map("records" -> records, "duplicates" -> dupes))
+    val content = templateEngine.layout("WEB-INF/indexer.scaml")
     val r: Runnable = () => {
       response.status(200)
       response.content(content)

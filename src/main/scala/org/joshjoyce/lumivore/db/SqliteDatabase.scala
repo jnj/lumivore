@@ -36,7 +36,7 @@ class SqliteDatabase {
       """.stripMargin
     withQuery(sql) {
       r => mapResults(r) {
-        s => IndexRecord(Paths.get(s.getString("FILE_PATH")), s.getString("HASH"))
+        s => IndexRecord(Paths.get(s.getString("FILE_PATH")), s.getString("HASH"), 0,0)
       }
     }
   }

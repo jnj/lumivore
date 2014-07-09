@@ -10,9 +10,17 @@ class Indexer(val pathStream: PathStream, output: Channel[IndexRecord]) {
   private val suffixes = Set(".jpg", ".psd", ".tiff", ".orf", ".rw2", ".jpeg", ".dng")
   private val digest = MessageDigest.getInstance("SHA-1")
 
-  pathStream.paths.foreach(index)
+  private val allPaths = pathStream.paths.toSeq.filterNot(_.toFile.isDirectory)
 
-  def index(path: Path) {
+  def start() {
+    println("indexer starting....")
+    allPaths.zipWithIndex.foreach {
+      case (path, i) => index(path, i)
+    }
+  }
+
+  def index(path: Path, index: Int) {
+    println("indexing " + path)
     val file = path.toFile
     if (file.isDirectory) {
       // skip
@@ -21,7 +29,7 @@ class Indexer(val pathStream: PathStream, output: Channel[IndexRecord]) {
       if (suffixes.exists(normalizedPath.endsWith)) {
         digest.reset()
         val hash = createDigestHash(path)
-        val record = IndexRecord(Paths.get(normalizedPath), hash)
+        val record = IndexRecord(Paths.get(normalizedPath), hash, index + 1, allPaths.size)
         output.publish(record)
       }
     }
