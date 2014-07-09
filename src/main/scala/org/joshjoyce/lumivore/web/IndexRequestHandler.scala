@@ -1,14 +1,14 @@
 package org.joshjoyce.lumivore.web
 
-import org.webbitserver.{WebSocketConnection, WebSocketHandler}
-import org.joshjoyce.lumivore.io.DirectoryPathStream
 import java.io.File
+import org.jetlang.channels.MemoryChannel
 import org.jetlang.fibers.ThreadFiber
 import org.joshjoyce.lumivore.index.{Indexer, IndexRecord}
-import org.jetlang.channels.MemoryChannel
-import org.joshjoyce.lumivore.util.Implicits
+import org.joshjoyce.lumivore.io.DirectoryPathStream
+import org.joshjoyce.lumivore.util.{LumivoreLogging, Implicits}
+import org.webbitserver.{WebSocketConnection, WebSocketHandler}
 
-class IndexRequestHandler extends WebSocketHandler {
+class IndexRequestHandler extends WebSocketHandler with LumivoreLogging {
   import Implicits._
   private val fiber = new ThreadFiber
   fiber.start()
@@ -17,21 +17,14 @@ class IndexRequestHandler extends WebSocketHandler {
 
   override def onPing(connection: WebSocketConnection, msg: Array[Byte]) = {}
 
-  override def onMessage(connection: WebSocketConnection, msg: Array[Byte]) = {
-    println("got byte array msg")
-  }
+  override def onMessage(connection: WebSocketConnection, msg: Array[Byte]) = {}
 
   override def onMessage(connection: WebSocketConnection, msg: String) = {
-    println("got string msg: " + msg)
+    log.info("Received string msg " + msg)
     val channel = new MemoryChannel[IndexRecord]
     val subFiber = new ThreadFiber
     subFiber.start()
-    val sub = channel.subscribe(subFiber) {
-      record => {
-        println(record)
-        connection.send(record.asJson)
-      }
-    }
+    val sub = channel.subscribe(subFiber) {r => connection.send(r.asJson)}
     fiber.execute(new Runnable {
       override def run() = {
         val paths = new DirectoryPathStream(new File("/home/josh/Pictures"))

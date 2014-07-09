@@ -5,22 +5,21 @@ import java.security.MessageDigest
 import javax.xml.bind.DatatypeConverter
 import org.jetlang.channels.Channel
 import org.joshjoyce.lumivore.io.PathStream
+import org.joshjoyce.lumivore.util.LumivoreLogging
 
-class Indexer(val pathStream: PathStream, output: Channel[IndexRecord]) {
+class Indexer(val pathStream: PathStream, output: Channel[IndexRecord]) extends LumivoreLogging {
   private val suffixes = Set(".jpg", ".psd", ".tiff", ".orf", ".rw2", ".jpeg", ".dng")
   private val digest = MessageDigest.getInstance("SHA-1")
 
   private val allPaths = pathStream.paths.toSeq.filterNot(_.toFile.isDirectory)
 
   def start() {
-    println("indexer starting....")
     allPaths.zipWithIndex.foreach {
       case (path, i) => index(path, i)
     }
   }
 
   def index(path: Path, index: Int) {
-    println("indexing " + path)
     val file = path.toFile
     if (file.isDirectory) {
       // skip
@@ -30,6 +29,7 @@ class Indexer(val pathStream: PathStream, output: Channel[IndexRecord]) {
         digest.reset()
         val hash = createDigestHash(path)
         val record = IndexRecord(Paths.get(normalizedPath), hash, index + 1, allPaths.size)
+        log.info("Indexed " + record)
         output.publish(record)
       }
     }
