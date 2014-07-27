@@ -5,5 +5,7 @@ object SetupDatabase {
     val db = new SqliteDatabase
     db.connect()
     db.createTables()
+    Set("jpg", "dng", "rw2", "orf").foreach(db.addExtension)
+    println("ok")
   }
 }

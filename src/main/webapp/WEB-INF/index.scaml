@@ -1,5 +1,21 @@
 -@ val records: List[String]
 -@ val duplicates: List[String]
+-@ val extensions: List[String]
+%h2 Extensions
+Only files with a whitelisted extension will be indexed. Your whitelist is:
+- if (extensions.isEmpty)
+  empty.
+- else
+  %ul.list-group
+    - extensions.foreach
+      - ext =>
+        %li.list-group-item #{ext}
+%form#extForm{:role => "form", :action => {uri("/addExtension")}}
+  .form-group
+    %label{:for => "extensionsToAdd"} Add extensions (whitespace separated)
+    %input.form-control#extensionsToAdd{:name => "extensionsToAdd", :type => "text"}
+  .btn-group
+    %button.btn.btn-primary#addExtButton{:type => "button"} Add
 %h2 Indexed
 - records.foreach
   - r =>
@@ -13,3 +29,9 @@
     - d =>
       #{d}
       %br
+:!javascript
+  $(function () {
+    $("#addExtButton").click(function () {
+        $("#extForm").submit();
+    });
+  });
