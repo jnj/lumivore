@@ -45,6 +45,17 @@ class SqliteDatabase {
     }
   }
 
+  def insertUpload(hash: String, vault: String, archiveId: String) {
+    ensureConnected()
+    executeWithPreparedStatement("INSERT INTO GLACIER_UPLOADS(HASH, VAULT, ARCHIVE_ID) VALUES (?, ?, ?);") {
+      s => {
+        s.setString(1, hash)
+        s.setString(2, vault)
+        s.setString(3, archiveId)
+      }
+    }
+  }
+
   def getSync(path: String) = {
     ensureConnected()
     withQuery("SELECT PATH, SHA1, SYNC_TIME FROM SYNCS WHERE PATH = ? ;") {
