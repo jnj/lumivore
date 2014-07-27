@@ -65,6 +65,15 @@ class SqliteDatabase {
     }
   }
 
+  def getGlacierUploads = {
+    ensureConnected()
+    withQuery("SELECT HASH, VAULT, ARCHIVE_ID FROM GLACIER_UPLOADS;")(noop) {
+      mapResults(_) {
+        r => (r.getString("HASH"), r.getString("VAULT"), r.getString("ARCHIVE_ID"))
+      }
+    }
+  }
+
   def addExtension(ext: String) {
     ensureConnected()
     executeWithPreparedStatement("INSERT INTO EXTENSIONS(EXTENSION) VALUES (?);") {
