@@ -1,8 +1,7 @@
 package org.joshjoyce.lumivore.db
 
 import java.sql._
-import org.joshjoyce.lumivore.index.IndexRecord
-import java.nio.file.{Path, Paths}
+import java.nio.file.Path
 
 class SqliteDatabase {
 
@@ -57,6 +56,15 @@ class SqliteDatabase {
     }
   }
 
+  def getSyncs = {
+    ensureConnected()
+    withQuery("SELECT PATH, SHA1, SYNC_TIME FROM SYNCS;")(noop) {
+      mapResults(_) {
+        r => (r.getString("PATH"), r.getString("SHA1"), r.getLong("SYNC_TIME"))
+      }
+    }
+  }
+
   def addExtension(ext: String) {
     ensureConnected()
     executeWithPreparedStatement("INSERT INTO EXTENSIONS(EXTENSION) VALUES (?);") {
@@ -89,19 +97,6 @@ class SqliteDatabase {
     }
   }
 
-  def queryPhotos() = {
-    ensureConnected()
-    val sql =
-      """
-        |SELECT ID, FILE_PATH, HASH FROM PHOTOS;
-      """.stripMargin
-    withQuery(sql)(noop) {
-      r => mapResults(r) {
-        s => IndexRecord(Paths.get(s.getString("FILE_PATH")), s.getString("HASH"), 0, 0)
-      }
-    }
-  }
-
   def getDuplicates = {
     ensureConnected()
     val sql =
@@ -126,17 +121,6 @@ class SqliteDatabase {
     }
 
     results.reverse
-  }
-
-  def insert(record: IndexRecord) {
-    ensureConnected()
-    executeWithPreparedStatement("INSERT INTO PHOTOS(FILE_PATH, HASH) VALUES (?, ?);") {
-      preparedStatement => {
-        preparedStatement.setString(1, record.path.toString)
-        preparedStatement.setString(2, record.digest)
-        preparedStatement.execute()
-      }
-    }
   }
 
   def executeUpdate(sql: String) {

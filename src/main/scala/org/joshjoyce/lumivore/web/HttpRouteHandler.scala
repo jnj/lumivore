@@ -20,7 +20,7 @@ class HttpRouteHandler(templateEngine: TemplateEngine, database: SqliteDatabase)
   }
 
  def renderHome(request: HttpRequest, response: HttpResponse, control: HttpControl) {
-    val records = database.queryPhotos().map(_.toString)
+    val records = Nil //database.queryPhotos().map(_.toString)
     val dupes = database.getDuplicates
     val content = templateEngine.layout("WEB-INF/index.scaml", Map("records" -> records, "duplicates" -> dupes))
    renderOkResponse(content)(request, response, control)

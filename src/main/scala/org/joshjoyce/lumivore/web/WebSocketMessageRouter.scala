@@ -1,15 +1,10 @@
 package org.joshjoyce.lumivore.web
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import org.jetlang.channels.MemoryChannel
 import org.jetlang.fibers.ThreadFiber
-import org.joshjoyce.lumivore.index.{Indexer, IndexRecord}
 import org.joshjoyce.lumivore.util.{LumivoreLogging, Implicits}
-import org.joshjoyce.lumivore.io.DirectoryPathStream
 import org.joshjoyce.lumivore.db.SqliteDatabase
 import org.webbitserver.{WebSocketConnection, WebSocketHandler}
-import java.io.File
-import scala.collection.JavaConversions
 
 class WebSocketMessageRouter(database: SqliteDatabase, registry: Map[String, WebSocketResponder])
   extends WebSocketHandler with LumivoreLogging {
