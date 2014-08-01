@@ -13,6 +13,7 @@ import org.joshjoyce.lumivore.util.LumivoreLogging
 sealed trait GlacierUploadAttempt
 case class GlacierUpload(filePath: String, vaultName: String, uploadResult: UploadResult) extends GlacierUploadAttempt
 case class FailedUpload(filePath: String, vaultName: String, e: Throwable) extends GlacierUploadAttempt
+case object Done extends GlacierUploadAttempt
 
 class GlacierUploader(output: Channel[GlacierUploadAttempt]) extends LumivoreLogging {
   private var credentials: PropertiesCredentials = _

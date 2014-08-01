@@ -1,18 +1,18 @@
 package org.joshjoyce.lumivore.sync
 
-import org.jetlang.channels.MemoryChannel
+import org.jetlang.channels.Channel
 import org.jetlang.fibers.ThreadFiber
 import org.joshjoyce.lumivore.util.{LumivoreLogging, Implicits}
 import org.joshjoyce.lumivore.db.SqliteDatabase
 import java.io.File
 
-class UploadProcess(vaultName: String, database: SqliteDatabase, uploader: GlacierUploader) extends LumivoreLogging {
+class UploadProcess(vaultName: String, database: SqliteDatabase, uploader: GlacierUploader,
+                    resultsChannel: Channel[GlacierUploadAttempt]) extends LumivoreLogging {
 
   import Implicits._
 
   private val fiber = new ThreadFiber
-  private val resultsChannel = new MemoryChannel[GlacierUploadAttempt]
-  private var hashByPath: Map[String, String] = _
+  private var hashByPath: Map[String, String] = Map.empty
 
   resultsChannel.subscribe(fiber) {
     case (u: GlacierUpload) => {
@@ -24,6 +24,7 @@ class UploadProcess(vaultName: String, database: SqliteDatabase, uploader: Glaci
       }
     }
     case (f: FailedUpload) => log.error("Failed upload: " + f.filePath)
+    case Done => shutdown()
   }
 
   def start() {
@@ -41,6 +42,8 @@ class UploadProcess(vaultName: String, database: SqliteDatabase, uploader: Glaci
           uploader.upload(new File(path), vaultName)
         }
     }
+
+    fiber.join()
   }
 
   def shutdown() {
