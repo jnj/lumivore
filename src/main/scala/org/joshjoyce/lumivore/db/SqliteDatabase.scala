@@ -36,11 +36,23 @@ class SqliteDatabase {
 
   def insertSync(path: String, sha1: String) {
     ensureConnected()
-    executeWithPreparedStatement("INSERT INTO SYNCS(PATH, SHA1, SYNC_TIME VALUES (?, ?, ?);") {
+    executeWithPreparedStatement("INSERT INTO SYNCS(PATH, SHA1, SYNC_TIME) VALUES (?, ?, ?);") {
       s => {
         s.setString(1, path)
         s.setString(2, sha1)
         s.setLong(3, System.currentTimeMillis())
+      }
+    }
+  }
+
+  def updateSync(path: String, sha1: String) {
+    ensureConnected()
+    val now = System.currentTimeMillis()
+    updateWithPreparedStatement("UPDATE SYNCS SET SHA1 = ?, SYNC_TIME = ? WHERE PATH = ?;") {
+      ps => {
+        ps.setString(1, sha1)
+        ps.setLong(2, now)
+        ps.setString(3, path)
       }
     }
   }
@@ -180,6 +192,19 @@ class SqliteDatabase {
       stmt = conn.prepareStatement(sql)
       f(stmt)
       stmt.execute()
+    } finally {
+      if (stmt != null) {
+        stmt.close()
+      }
+    }
+  }
+
+  private def updateWithPreparedStatement[A](sql: String)(f: PreparedStatement => A) = {
+    var stmt: PreparedStatement = null
+    try {
+      stmt = conn.prepareStatement(sql)
+      f(stmt)
+      stmt.executeUpdate()
     } finally {
       if (stmt != null) {
         stmt.close()
