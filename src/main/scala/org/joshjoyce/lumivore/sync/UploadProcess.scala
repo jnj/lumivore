@@ -28,6 +28,7 @@ class UploadProcess(vaultName: String, database: SqliteDatabase, uploader: Glaci
   }
 
   def start() {
+    fiber.start()
     val syncs = database.getSyncs
     val uploads = database.getGlacierUploads.groupBy(_._1)
     hashByPath ++= syncs.map {

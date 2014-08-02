@@ -23,8 +23,6 @@ class SqliteDatabase {
         |DROP TABLE IF EXISTS SYNCS;
         |CREATE TABLE SYNCS (PATH TEXT UNIQUE, SHA1 TEXT UNIQUE, SYNC_TIME INTEGER);
         |
-        |DROP TABLE IF EXISTS PHOTOS;
-        |
         |DROP TABLE IF EXISTS GLACIER_UPLOADS;
         |CREATE TABLE GLACIER_UPLOADS (HASH TEXT PRIMARY KEY, VAULT TEXT, ARCHIVE_ID TEXT);
         |
@@ -32,6 +30,16 @@ class SqliteDatabase {
         |CREATE TABLE EXTENSIONS (EXTENSION TEXT UNIQUE);
       """.stripMargin
     executeUpdate(sql)
+  }
+
+  def createIndexes() {
+    ensureConnected()
+    val sql =
+      """
+        |CREATE INDEX IF NOT EXISTS SYNC_PATH_INDEX ON SYNCS (PATH);
+        |CREATE INDEX IF NOT EXISTS SYNC_SHA1_INDEX ON SYNCS (SHA1);
+        |CREATE INDEX IF NOT EXISTS UPLOADS_HASH_INDEX ON GLACIER_UPLOADS (HASH);
+      """.stripMargin
   }
 
   def insertSync(path: String, sha1: String) {
