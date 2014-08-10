@@ -15,6 +15,7 @@ class BackupResponder(database: SqliteDatabase) extends WebSocketResponder {
   override def msgType = "backup"
   private var uploaderFiber: Option[Fiber] = None
   private var resultsFiber: Option[Fiber] = None
+  private var glacierUploader: GlacierUploader = _
 
   override def respond(msg: Map[String, Any], connection: WebSocketConnection, fiber: Fiber) = {
     implicit val con = connection
@@ -26,7 +27,7 @@ class BackupResponder(database: SqliteDatabase) extends WebSocketResponder {
         Seq(uploaderFiber, resultsFiber).foreach(_.foreach(_.start()))
 
         val outputChannel = new MemoryChannel[GlacierUploadAttempt]
-        val glacierUploader = new GlacierUploader(outputChannel)
+        glacierUploader = new GlacierUploader(outputChannel)
         glacierUploader.init()
 
         val upload = new UploadProcess("photos", database, glacierUploader, outputChannel, uploaderFiber.get, resultsFiber.get)
@@ -44,12 +45,12 @@ class BackupResponder(database: SqliteDatabase) extends WebSocketResponder {
             val json = JSONObject(Map("msgType" -> "completeUpload", "percent" -> f.percent, "file" -> f.filePath)).toString()
             executeOnConnectionThread(con.send(json))
           }
-          case Done => disposeFibers()
+          case Done => stop()
         }
 
         upload.start()
       }
-      case Some("stop") => disposeFibers()
+      case Some("stop") => stop()
       case _ => {}
     }
   }
@@ -60,7 +61,8 @@ class BackupResponder(database: SqliteDatabase) extends WebSocketResponder {
     })
   }
 
-  private def disposeFibers() {
+  private def stop() {
+    glacierUploader.stop()
     resultsFiber.foreach(_.dispose())
     uploaderFiber.foreach(_.dispose())
     resultsFiber = None

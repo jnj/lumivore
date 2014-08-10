@@ -27,6 +27,10 @@ class GlacierUploader(output: Channel[GlacierUploadAttempt]) extends LumivoreLog
     atm = new ArchiveTransferManager(client, credentials)
   }
 
+  def stop() {
+    client.shutdown()
+  }
+
   def upload(archive: File, vaultName: String, percent: Int) {
     try {
       var bytesTransferred = 0L

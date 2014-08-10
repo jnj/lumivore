@@ -6,11 +6,11 @@
     %br
     .progress
       .progress-bar.progress-bar-striped.progress-bar-success.active#progBar{:role => "progressbar", "aria-valuenow" => "0", "aria-valuemin" => "0", "aria-valuemax" => "100", :style => "width: 0%;"}
-        %span#progText
+        %span#progText #{"0%"}
     %br
     .progress
       .progress-bar.progress-bar-striped.progress-bar-success.active#fileProgBar{:role => "progressbar", "aria-valuenow" => "0", "aria-valuemin" => "0", "aria-valuemax" => "100", :style => "width: 0%;"}
-        %span#fileProgText
+        %span#fileProgText #{"0%"}
   .btn-group
     %button.btn.btn-success#submitButton{:type => "button"} Upload
     %button.btn.btn-default#cancelButton{:type => "button"} Cancel
@@ -24,6 +24,7 @@
     var fileProgBar = $("#fileProgBar");
     var statusContent = $("#statusContent");
     var fileProgText = $("#fileProgText");
+    var progText = $("#progText");
     var filePath = $("#filePath");
 
     $('#submitButton').click(function () {
@@ -51,7 +52,9 @@
 
     function setTotalProgress(percent) {
       progBar.attr("aria-valuenow", percent);
-      progBar.css("width", percent + "%");
+      var pctString = percent + "%";
+      progBar.css("width", pctString);
+      progText.text(pctString);
     }
 
     ws.onmessage = function (msg) {
@@ -63,7 +66,6 @@
           setFileProgress(obj.percent);
           filePath.text(obj.file);
         }
-        //statusContent.html(obj.file);
     };
   });
 
