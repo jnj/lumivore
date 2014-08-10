@@ -33,12 +33,7 @@ class WebSocketMessageRouter(database: SqliteDatabase, registry: Map[String, Web
 
   private def handle(json: JSONObject, connection: WebSocketConnection) {
     val msgType = json.obj.get("msgType").getOrElse("").toString
-    println("msg type = '" + msgType + "'")
-    println("registry = " + registry)
     val maybeResponder: Option[WebSocketResponder] = registry.get(msgType)
-
-    println("got responder: " + maybeResponder)
-
     maybeResponder.foreach {
       responder => responder.respond(json.obj, connection, fiber)
     }
