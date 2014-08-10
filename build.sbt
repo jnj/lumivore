@@ -16,8 +16,6 @@ libraryDependencies += "org.xerial" % "sqlite-jdbc" % "3.7.15-M1"
 
 libraryDependencies += "org.webbitserver" % "webbit" % "0.4.15"
 
-libraryDependencies += "org.json4s" %% "json4s-jackson" % "3.2.10"
-
 libraryDependencies += "org.slf4j" % "slf4j-log4j12" % "1.7.7"
 
 libraryDependencies += "org.scalatra.scalate" %% "scalate-core" % "1.7.0"

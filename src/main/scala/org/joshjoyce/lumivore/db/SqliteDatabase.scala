@@ -40,6 +40,7 @@ class SqliteDatabase {
         |CREATE INDEX IF NOT EXISTS SYNC_SHA1_INDEX ON SYNCS (SHA1);
         |CREATE INDEX IF NOT EXISTS UPLOADS_HASH_INDEX ON GLACIER_UPLOADS (HASH);
       """.stripMargin
+    executeUpdate(sql)
   }
 
   def insertSync(path: String, sha1: String) {

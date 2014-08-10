@@ -1,21 +1,23 @@
 package org.joshjoyce.lumivore.sync
 
 import org.jetlang.channels.Channel
-import org.jetlang.fibers.ThreadFiber
+import org.jetlang.fibers.Fiber
 import org.joshjoyce.lumivore.util.{LumivoreLogging, Implicits}
 import org.joshjoyce.lumivore.db.SqliteDatabase
 import java.io.File
 
+import scala.math.round
+
 class UploadProcess(vaultName: String, database: SqliteDatabase, uploader: GlacierUploader,
-                    resultsChannel: Channel[GlacierUploadAttempt]) extends LumivoreLogging {
+                    resultsChannel: Channel[GlacierUploadAttempt],
+                    runnerFiber: Fiber, resultsFiber: Fiber) extends LumivoreLogging {
 
   import Implicits._
 
-  private val fiber = new ThreadFiber
   private var hashByPath: Map[String, String] = Map.empty
 
-  resultsChannel.subscribe(fiber) {
-    case (u: GlacierUpload) => {
+  resultsChannel.subscribe(resultsFiber) {
+    case (u: CompleteUpload) => {
       val hash = hashByPath(u.filePath)
       try {
         database.insertUpload(hash, u.vaultName, u.uploadResult.getArchiveId)
@@ -24,30 +26,26 @@ class UploadProcess(vaultName: String, database: SqliteDatabase, uploader: Glaci
       }
     }
     case (f: FailedUpload) => log.error("Failed upload: " + f.filePath)
-    case Done => shutdown()
+    case _ => {}
   }
 
   def start() {
-    fiber.start()
-    val syncs = database.getSyncs
-    val uploads = database.getGlacierUploads.groupBy(_._1)
-    hashByPath ++= syncs.map {
-      t => (t._1, t._2)
-    }.toMap
+    runnerFiber.execute(new Runnable {
+      override def run(): Unit = {
+        val uploads = database.getGlacierUploads.groupBy(_._1)
+        val filteredSyncs = database.getSyncs.filterNot { case (_, sha1, _) => uploads.contains(sha1) }
 
-    syncs.foreach {
-      case (path, sha1, _) =>
-        if (uploads.contains(sha1)) {
-          // nothing to upload
-        } else {
-          uploader.upload(new File(path), vaultName)
+        hashByPath ++= filteredSyncs.map {
+          t => (t._1, t._2)
+        }.toMap
+
+        filteredSyncs.zipWithIndex.foreach {
+          case ((path, sha1, _), index) =>
+            log.info("Uploading " + path + " (" + (index+1) + " / " + filteredSyncs.size + ")")
+            val percent = round(100.0 * (index + 1) / filteredSyncs.size).toInt
+            uploader.upload(new File(path), vaultName, percent)
         }
-    }
-
-    fiber.join()
-  }
-
-  def shutdown() {
-    fiber.dispose()
+      }
+    })
   }
 }

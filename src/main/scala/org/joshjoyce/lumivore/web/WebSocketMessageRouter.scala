@@ -1,15 +1,16 @@
 package org.joshjoyce.lumivore.web
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import org.jetlang.fibers.ThreadFiber
-import org.joshjoyce.lumivore.util.{LumivoreLogging, Implicits}
+import org.joshjoyce.lumivore.util.LumivoreLogging
 import org.joshjoyce.lumivore.db.SqliteDatabase
 import org.webbitserver.{WebSocketConnection, WebSocketHandler}
+import scala.collection.JavaConversions
+import scala.util.parsing.json.{JSONObject, JSON}
 
 class WebSocketMessageRouter(database: SqliteDatabase, registry: Map[String, WebSocketResponder])
   extends WebSocketHandler with LumivoreLogging {
+  import JavaConversions._
 
-  private val mapper = new ObjectMapper
   private val fiber = new ThreadFiber
   fiber.start()
 
@@ -21,36 +22,27 @@ class WebSocketMessageRouter(database: SqliteDatabase, registry: Map[String, Web
 
   override def onMessage(connection: WebSocketConnection, msg: String) = {
     log.info("Received string msg " + msg)
-    val parsed = mapper.readValue(msg, classOf[java.util.Map[String, java.lang.Object]])
-
-    if (!parsed.containsKey("action")) {
-      throw new IllegalArgumentException("JSON needs an 'action' key")
+    JSON.parseRaw(msg) match {
+      case None => log.warn("Not a valid JSON document or list of documents: " + msg)
+      case Some(jsonType) => jsonType match {
+        case (json: JSONObject) => handle(json, connection)
+        case _ => log.warn("Not a JSON document (looks like an array of documents): " + msg)
+      }
     }
-
-//    registry.get(parsed.get("action"))
-//     match {
-//
-//    }
   }
-//
-//
-//    val channel = new MemoryChannel[IndexRecord]
-//    val subFiber = new ThreadFiber
-//    subFiber.start()
-//    val sub = channel.subscribe(subFiber) {
-//      r => connection.send(r.asJson)
-//    }
-//    val extensions = database.getExtensions
-//    fiber.execute(new Runnable {
-//      override def run() = {
-//        val paths = new DirectoryPathStream(new File("/home/josh/Pictures"))
-//        val indexer = new Indexer(paths, channel, extensions.toSet)
-//        indexer.start()
-//        sub.dispose()
-//        subFiber.dispose()
-//      }
-//    })
-//  }
+
+  private def handle(json: JSONObject, connection: WebSocketConnection) {
+    val msgType = json.obj.get("msgType").getOrElse("").toString
+    println("msg type = '" + msgType + "'")
+    println("registry = " + registry)
+    val maybeResponder: Option[WebSocketResponder] = registry.get(msgType)
+
+    println("got responder: " + maybeResponder)
+
+    maybeResponder.foreach {
+      responder => responder.respond(json.obj, connection, fiber)
+    }
+  }
 
   override def onClose(connection: WebSocketConnection) = {}
 

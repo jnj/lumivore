@@ -9,6 +9,7 @@ class Lumivore(port: Int, templateEngine: TemplateEngine, database: SqliteDataba
   private var webserver: WebServer = _
   private var running = false
   private val routeHandler = new HttpRouteHandler(templateEngine, database)
+  private val registry = createWsRegistry
 
   def start() {
     if (!running) {
@@ -17,7 +18,8 @@ class Lumivore(port: Int, templateEngine: TemplateEngine, database: SqliteDataba
       webserver.add(new StaticFileHandler("src/main/webapp"))
       webserver.add("/", new HomeHandler(templateEngine, database))
       webserver.add("/index", routeHandler)
-//      webserver.add("/ws", new WebSocketMessageRouter(database))
+      webserver.add("/ws", new WebSocketMessageRouter(database, registry))
+      webserver.add("/backup", new BackupHandler(templateEngine))
       webserver.add("/addExtension", new AddExtensionsHandler(database))
       val future = webserver.start()
       future.get()
@@ -31,4 +33,8 @@ class Lumivore(port: Int, templateEngine: TemplateEngine, database: SqliteDataba
       running = false
     }
   }
+
+  private def createWsRegistry = Map(
+    "backup" -> new BackupResponder(database)
+  )
 }

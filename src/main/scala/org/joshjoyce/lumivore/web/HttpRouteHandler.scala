@@ -3,13 +3,10 @@ package org.joshjoyce.lumivore.web
 import org.webbitserver.{HttpControl, HttpResponse, HttpRequest, HttpHandler}
 import org.fusesource.scalate.TemplateEngine
 import org.joshjoyce.lumivore.db.SqliteDatabase
-import org.json4s.{DefaultFormats, Formats}
 import org.joshjoyce.lumivore.util.Implicits
 
 class HttpRouteHandler(templateEngine: TemplateEngine, database: SqliteDatabase) extends HttpHandler with WebbitSupport {
   import Implicits._
-
-  implicit protected val jsonFormats: Formats = DefaultFormats
 
   override def handleHttpRequest(request: HttpRequest, response: HttpResponse, control: HttpControl) = {
     println("uri is " + request.uri())
