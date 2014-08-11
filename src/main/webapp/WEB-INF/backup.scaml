@@ -6,11 +6,11 @@
     %br
     .progress
       .progress-bar.progress-bar-striped.progress-bar-success.active#progBar{:role => "progressbar", "aria-valuenow" => "0", "aria-valuemin" => "0", "aria-valuemax" => "100", :style => "width: 0%;"}
-        %span#progText #{"0%"}
+        %span#progText
     %br
     .progress
       .progress-bar.progress-bar-striped.progress-bar-success.active#fileProgBar{:role => "progressbar", "aria-valuenow" => "0", "aria-valuemin" => "0", "aria-valuemax" => "100", :style => "width: 0%;"}
-        %span#fileProgText #{"0%"}
+        %span#fileProgText
   .btn-group
     %button.btn.btn-success#submitButton{:type => "button"} Upload
     %button.btn.btn-default#cancelButton{:type => "button"} Cancel
@@ -28,18 +28,15 @@
     var filePath = $("#filePath");
 
     $('#submitButton').click(function () {
-      var obj = jQuery.stringifyJSON({ msgType: 'backup', action: 'start' });
+      var obj = JSON.stringify({ msgType: 'backup', action: 'start' });
       ws.send(obj);
       return false;
     });
 
     $("#cancelButton").click(function () {
-      // progBar.attr("aria-valuenow", 0);
-      // progBar.css("width", "0%");
       statusContent.html('');
-      var obj = jQuery.stringifyJSON({ msgType: 'backup', action: 'stop' });
+      var obj = JSON.stringify({ msgType: 'backup', action: 'stop' });
       ws.send(obj);
-
       return false;
     });
 
@@ -58,14 +55,14 @@
     }
 
     ws.onmessage = function (msg) {
-        var obj = $.parseJSON(msg.data);
-        if (obj.msgType == "completeUpload") {
-          setFileProgress(0);
-          setTotalProgress(obj.percent);
-        } else if (obj.msgType == "partialUpload") {
-          setFileProgress(obj.percent);
-          filePath.text(obj.file);
-        }
+      var obj = JSON.parse(msg.data);
+      if (obj.msgType == "completeUpload") {
+        setFileProgress(0);
+        setTotalProgress(obj.percent);
+      } else if (obj.msgType == "partialUpload") {
+        setFileProgress(obj.percent);
+        filePath.text(obj.file);
+      }
     };
   });
 

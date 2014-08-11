@@ -41,5 +41,7 @@ class WebSocketMessageRouter(database: SqliteDatabase, registry: Map[String, Web
 
   override def onClose(connection: WebSocketConnection) = {}
 
-  override def onOpen(connection: WebSocketConnection) = {}
+  override def onOpen(connection: WebSocketConnection) = {
+    log.info("ws client connected " + connection)
+  }
 }

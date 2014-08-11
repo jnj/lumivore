@@ -33,6 +33,7 @@ class UploadProcess(vaultName: String, database: SqliteDatabase, uploader: Glaci
     runnerFiber.execute(new Runnable {
       override def run(): Unit = {
         val uploads = database.getGlacierUploads.groupBy(_._1)
+        log.info(uploads.size + " uploads found")
         val filteredSyncs = database.getSyncs.filterNot { case (_, sha1, _) => uploads.contains(sha1) }
 
         hashByPath ++= filteredSyncs.map {
