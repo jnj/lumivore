@@ -22,6 +22,7 @@ class Lumivore(port: Int, templateEngine: TemplateEngine, database: SqliteDataba
       webserver.add("/backup", new BackupHandler(templateEngine))
       webserver.add("/addExtension", new AddExtensionsHandler(database))
       val future = webserver.start()
+      println("Web module %s started on port %s".format(getClass().getName(), port))
       future.get()
     }
   }

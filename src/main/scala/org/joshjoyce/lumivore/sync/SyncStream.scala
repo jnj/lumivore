@@ -56,6 +56,8 @@ class SyncStream(database: SqliteDatabase) extends LumivoreLogging {
     log.info("Loaded extensions: " + validExtensions.mkString(", "))
     log.info("Executing from root: " + root.toString)
 
+    val sha1ByPath = database.getSyncs.groupBy(_._1).mapValues(_.head._2)
+
     DirectoryPathStream.recurse(root.toFile) {
       path => {
         log.info("got path " + path)
@@ -64,14 +66,14 @@ class SyncStream(database: SqliteDatabase) extends LumivoreLogging {
         val loweredPath = pathString.toLowerCase
 
         if (validExtensions.isEmpty || validExtensions.exists(loweredPath.endsWith)) {
-          val syncs = database.getSync(pathString)
+          val syncOpt = sha1ByPath.get(pathString)
 
-          if (syncs.isEmpty) {
+          if (!syncOpt.isDefined) {
             val unseen = Unseen(normPath)
             log.info("Path is unseen " + path)
             notifyObservers(unseen)
           } else {
-            val (_, syncHash, _) = syncs.head
+            val syncHash = syncOpt.get
             val hash = HashUtils.hashContents(normPath)
 
             if (hash != syncHash) {

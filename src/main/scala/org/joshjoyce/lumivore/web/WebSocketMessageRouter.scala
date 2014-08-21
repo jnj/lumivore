@@ -9,7 +9,6 @@ import scala.util.parsing.json.{JSONObject, JSON}
 
 class WebSocketMessageRouter(database: SqliteDatabase, registry: Map[String, WebSocketResponder])
   extends WebSocketHandler with LumivoreLogging {
-  import JavaConversions._
 
   private val fiber = new ThreadFiber
   fiber.start()

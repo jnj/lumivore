@@ -14,6 +14,8 @@ class UploadProcess(vaultName: String, database: SqliteDatabase, uploader: Glaci
 
   import Implicits._
 
+  @volatile
+  private var running = false
   private var hashByPath: Map[String, String] = Map.empty
 
   resultsChannel.subscribe(resultsFiber) {
@@ -31,7 +33,8 @@ class UploadProcess(vaultName: String, database: SqliteDatabase, uploader: Glaci
 
   def start() {
     runnerFiber.execute(new Runnable {
-      override def run(): Unit = {
+      override def run() {
+        running = true
         val uploads = database.getGlacierUploads.groupBy(_._1)
         log.info(uploads.size + " uploads found")
         val filteredSyncs = database.getSyncs.filterNot { case (_, sha1, _) => uploads.contains(sha1) }
@@ -41,12 +44,19 @@ class UploadProcess(vaultName: String, database: SqliteDatabase, uploader: Glaci
         }.toMap
 
         filteredSyncs.zipWithIndex.foreach {
-          case ((path, sha1, _), index) =>
+          case ((path, sha1, _), index) if running =>
             log.info("Uploading " + path + " (" + (index+1) + " / " + filteredSyncs.size + ")")
             val percent = round(100.0 * (index + 1) / filteredSyncs.size).toInt
             uploader.upload(new File(path), vaultName, percent)
+          case _ =>
         }
+
+        running = false
       }
     })
+  }
+
+  def stop() {
+    running = false
   }
 }

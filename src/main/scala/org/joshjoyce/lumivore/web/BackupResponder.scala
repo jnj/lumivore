@@ -12,46 +12,57 @@ import scala.util.parsing.json.JSONObject
 
 class BackupResponder(database: SqliteDatabase) extends WebSocketResponder {
   import Implicits._
-  override def msgType = "backup"
+
   private var uploaderFiber: Option[Fiber] = None
   private var resultsFiber: Option[Fiber] = None
   private var glacierUploader: GlacierUploader = _
+  private var channel: Option[MemoryChannel[GlacierUploadAttempt]] = None
+  private var upload: Option[UploadProcess] = None
+
+  override def msgType = "backup"
 
   override def respond(msg: Map[String, Any], connection: WebSocketConnection, fiber: Fiber) = {
     implicit val con = connection
 
     msg.get("action") match {
       case Some("start") => {
-        uploaderFiber = Some(new ThreadFiber)
-        resultsFiber = Some(new ThreadFiber)
-        Seq(uploaderFiber, resultsFiber).foreach(_.foreach(_.start()))
+        if (channel.isDefined) {
+          subscribeToResults(connection)
+        } else {
+          uploaderFiber = Some(new ThreadFiber)
+          resultsFiber = Some(new ThreadFiber)
+          Seq(uploaderFiber, resultsFiber).foreach(_.foreach(_.start()))
 
-        val outputChannel = new MemoryChannel[GlacierUploadAttempt]
-        glacierUploader = new GlacierUploader(outputChannel)
-        glacierUploader.init()
+          channel = Some(new MemoryChannel[GlacierUploadAttempt])
+          glacierUploader = new GlacierUploader(channel.get)
+          glacierUploader.init()
 
-        val upload = new UploadProcess("photos", database, glacierUploader, outputChannel, uploaderFiber.get, resultsFiber.get)
-
-        outputChannel.subscribe(resultsFiber.get) {
-          case (g: CompleteUpload) => {
-            val json = JSONObject(Map("msgType" -> "completeUpload", "percent" -> g.percent, "file" -> g.filePath)).toString()
-            executeOnConnectionThread(con.send(json))
-          }
-          case (p: PartialUpload) => executeOnConnectionThread {
-            val json = JSONObject(Map("msgType" -> "partialUpload", "percent" -> p.percent, "file" -> p.filePath)).toString()
-            executeOnConnectionThread(con.send(json))
-          }
-          case (f: FailedUpload) => {
-            val json = JSONObject(Map("msgType" -> "completeUpload", "percent" -> f.percent, "file" -> f.filePath)).toString()
-            executeOnConnectionThread(con.send(json))
-          }
-          case Done => stop()
+          upload = Option(new UploadProcess("photos", database, glacierUploader, channel.get, uploaderFiber.get, resultsFiber.get))
+          subscribeToResults(connection)
+          upload.foreach(_.start())
         }
-
-        upload.start()
       }
       case Some("stop") => stop()
       case _ => {}
+    }
+  }
+
+  private def subscribeToResults(con: WebSocketConnection) {
+    implicit val c = con
+    channel.get.subscribe(resultsFiber.get) {
+      case (g: CompleteUpload) => {
+        val json = JSONObject(Map("msgType" -> "completeUpload", "percent" -> g.percent, "file" -> g.filePath)).toString()
+        executeOnConnectionThread(con.send(json))
+      }
+      case (p: PartialUpload) => executeOnConnectionThread {
+        val json = JSONObject(Map("msgType" -> "partialUpload", "percent" -> p.percent, "file" -> p.filePath)).toString()
+        executeOnConnectionThread(con.send(json))
+      }
+      case (f: FailedUpload) => {
+        val json = JSONObject(Map("msgType" -> "completeUpload", "percent" -> f.percent, "file" -> f.filePath)).toString()
+        executeOnConnectionThread(con.send(json))
+      }
+      case Done => stop()
     }
   }
 
@@ -62,10 +73,14 @@ class BackupResponder(database: SqliteDatabase) extends WebSocketResponder {
   }
 
   private def stop() {
+    upload.foreach(_.stop())
+    upload = None
     glacierUploader.stop()
     resultsFiber.foreach(_.dispose())
     uploaderFiber.foreach(_.dispose())
     resultsFiber = None
     uploaderFiber = None
+    channel.foreach(_.clearSubscribers())
+    channel = None
   }
 }
