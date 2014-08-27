@@ -37,7 +37,7 @@ object SyncMain extends LumivoreLogging {
       }
     }
 
-    args.foreach {
+    database.getWatchedDirectories.foreach {
       arg => {
         val sync = new SyncStream(database)
         sync.addObserver(syncChannel)

@@ -1,5 +1,4 @@
--@ val records: List[String]
--@ val duplicates: List[String]
+-@ val watched: List[String]
 -@ val extensions: List[String]
 %h2 Extensions
 Only files with a whitelisted extension will be indexed. Your whitelist is:
@@ -17,21 +16,25 @@ Only files with a whitelisted extension will be indexed. Your whitelist is:
   .btn-group
     %button.btn.btn-primary#addExtButton{:type => "button"} Add
 %h2 Indexed
-- records.foreach
-  - r =>
-    #{r}
-    %br
-%h2 Duplicates
-- if (duplicates.isEmpty)
-  There are no duplicates.
+- if (watched.isEmpty)
+  empty.
 - else
-  - duplicates.foreach
-    - d =>
-      #{d}
-      %br
+  %ul.list-group
+    - watched.foreach
+      - r =>
+        %li.list-group-item #{r}
+%form#watchForm{:role => "form", :action => {uri("/addWatchDir")}}
+  .form-group
+    %label{:for => "watchDir"} Add directory to watch
+    %input.form-control#watchDir{:name => "watchDir", :type => "text"}
+  .btn-group
+    %button.btn.btn-primary#addWatchDirButton{:type => "button"} Add
 :!javascript
   $(function () {
     $("#addExtButton").click(function () {
         $("#extForm").submit();
+    });
+    $("#addWatchDirButton").click(function () {
+        $("#watchForm").submit();
     });
   });

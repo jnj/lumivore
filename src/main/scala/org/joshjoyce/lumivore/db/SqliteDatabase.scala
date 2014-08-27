@@ -28,6 +28,9 @@ class SqliteDatabase {
         |
         |DROP TABLE IF EXISTS EXTENSIONS;
         |CREATE TABLE EXTENSIONS (EXTENSION TEXT UNIQUE);
+        |
+        |DROP TABLE IF EXISTS INDEXED_PATHS;
+        |CREATE TABLE INDEXED_PATHS (PATH TEXT UNIQUE);
       """.stripMargin
     executeUpdate(sql)
   }
@@ -134,21 +137,6 @@ class SqliteDatabase {
     executeWithPreparedStatement("INSERT INTO INDEXED_PATHS(PATH) VALUES (?);") {
       s => {
         s.setString(1, path.toString)
-      }
-    }
-  }
-
-  def getDuplicates = {
-    ensureConnected()
-    val sql =
-      """
-        |SELECT PATHS FROM (
-        |   SELECT GROUP_CONCAT(FILE_PATH, ';') AS PATHS, COUNT(FILE_PATH) AS TOTAL FROM PHOTOS GROUP BY HASH
-        |) WHERE TOTAL > 1;
-      """.stripMargin
-    withQuery(sql)(noop) {
-      r => mapResults(r) {
-        s => s.getString("PATHS")
       }
     }
   }

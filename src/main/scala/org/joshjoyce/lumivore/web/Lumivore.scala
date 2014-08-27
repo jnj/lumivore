@@ -21,6 +21,7 @@ class Lumivore(port: Int, templateEngine: TemplateEngine, database: SqliteDataba
       webserver.add("/ws", new WebSocketMessageRouter(database, registry))
       webserver.add("/backup", new BackupHandler(templateEngine))
       webserver.add("/addExtension", new AddExtensionsHandler(database))
+      webserver.add("/addWatchDir", new AddWatchDirHandler(database))
       val future = webserver.start()
       println("Web module %s started on port %s".format(getClass().getName(), port))
       future.get()
