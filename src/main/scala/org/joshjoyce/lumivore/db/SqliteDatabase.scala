@@ -31,6 +31,12 @@ class SqliteDatabase {
         |
         |DROP TABLE IF EXISTS INDEXED_PATHS;
         |CREATE TABLE INDEXED_PATHS (PATH TEXT UNIQUE);
+        |
+        |DROP TABLE IF EXISTS CONTENT_CHANGES;
+        |CREATE TABLE CONTENT_CHANGES (PATH TEXT, OLD_HASH TEXT, NEW_HASH TEXT, UNIQUE (OLD_HASH, NEW_HASH) );
+        |
+        |DROP TABLE IF EXISTS DUPLICATES;
+        |CREATE TABLE DUPLICATES (PATH TEXT PRIMARY KEY) ;
       """.stripMargin
     executeUpdate(sql)
   }
@@ -42,6 +48,7 @@ class SqliteDatabase {
         |CREATE INDEX IF NOT EXISTS SYNC_PATH_INDEX ON SYNCS (PATH);
         |CREATE INDEX IF NOT EXISTS SYNC_SHA1_INDEX ON SYNCS (SHA1);
         |CREATE INDEX IF NOT EXISTS UPLOADS_HASH_INDEX ON GLACIER_UPLOADS (HASH);
+        |CREATE INDEX IF NOT EXISTS CONTENT_CHG_INDEX ON CONTENT_CHANGES (OLD_HASH,  NEW_HASH);
       """.stripMargin
     executeUpdate(sql)
   }
@@ -53,6 +60,26 @@ class SqliteDatabase {
         s.setString(1, path)
         s.setString(2, sha1)
         s.setLong(3, System.currentTimeMillis())
+      }
+    }
+  }
+
+  def insertDup(path: String): Unit = {
+    ensureConnected()
+    executeWithPreparedStatement("INSERT INTO DUPLICATES(PATH) VALUES (?);") {
+      s => {
+        s.setString(1, path)
+      }
+    }
+  }
+
+  def insertContentChange(path: String, oldHash: String, newHash: String): Unit = {
+    ensureConnected()
+    executeWithPreparedStatement("INSERT INTO CONTENT_CHANGES (PATH, OLD_HASH, NEW_HASH) VALUES (?,?,?);") {
+      s => {
+        s.setString(1, path)
+        s.setString(2, oldHash)
+        s.setString(3, newHash)
       }
     }
   }

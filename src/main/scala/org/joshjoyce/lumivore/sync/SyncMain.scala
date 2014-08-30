@@ -29,14 +29,16 @@ object SyncMain extends LumivoreLogging {
           database.insertSync(path.toString, sha1)
           log.info("inserted " + path + " -> " + sha1)
         } catch {
-          case (e: SQLException) if e.getMessage.contains("CONSTRAINT") => {
-            log.info("DUPLICATED FILE FOUND: " + path)
+          case (e: SQLException) if isConstraintViolation(e) => {
+            log.warn("DUPLICATED FILE FOUND: " + path)
+            database.insertDup(path.toString)
           }
         }
       }
-      case ContentsChanged(path, hash) => {
+      case ContentsChanged(path, oldHash, hash) => {
+        log.info("Contents changed %s %s -> %s".format(path, oldHash, hash))
+        database.insertContentChange(path.toString, oldHash, hash)
         database.updateSync(path.toString, hash)
-        log.info("Updated " + path)
       }
     }
 
@@ -59,4 +61,6 @@ object SyncMain extends LumivoreLogging {
     futures.foreach(_.get())
     fiber.join()
   }
+
+  def isConstraintViolation(e: SQLException) = e.getMessage.toUpperCase.contains("CONSTRAINT")
 }

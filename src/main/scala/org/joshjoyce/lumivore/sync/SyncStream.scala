@@ -1,18 +1,19 @@
 package org.joshjoyce.lumivore.sync
 
-import java.nio.file.{Paths, Path}
+import java.nio.file.{Path, Paths}
+
+import org.jetlang.channels.{Channel, MemoryChannel}
+import org.jetlang.fibers.ThreadFiber
 import org.joshjoyce.lumivore.db.SqliteDatabase
-import org.joshjoyce.lumivore.io.{HashUtils, DirectoryPathStream}
-import org.jetlang.channels.{MemoryChannel, Channel}
-import org.jetlang.fibers.{Fiber, ThreadFiber}
-import org.joshjoyce.lumivore.util.{LumivoreLogging, Implicits}
+import org.joshjoyce.lumivore.io.{DirectoryPathStream, HashUtils}
+import org.joshjoyce.lumivore.util.LumivoreLogging
 
 sealed trait SyncCheckResult
 case class Unseen(path: Path) extends SyncCheckResult
-case class ContentsChanged(path: Path, hash: String) extends SyncCheckResult
+case class ContentsChanged(path: Path, oldHash: String, hash: String) extends SyncCheckResult
 
 object Test {
-  import Implicits._
+  import org.joshjoyce.lumivore.util.Implicits._
 
   def main(args: Array[String]) {
     val fiber = new ThreadFiber()
@@ -60,7 +61,6 @@ class SyncStream(database: SqliteDatabase) extends LumivoreLogging {
 
     DirectoryPathStream.recurse(root.toFile) {
       path => {
-        log.info("got path " + path)
         val pathString = path.toString
         val normPath = Paths.get(pathString)
         val loweredPath = pathString.toLowerCase
@@ -70,22 +70,16 @@ class SyncStream(database: SqliteDatabase) extends LumivoreLogging {
 
           if (!syncOpt.isDefined) {
             val unseen = Unseen(normPath)
-            log.info("Path is unseen " + path)
             notifyObservers(unseen)
           } else {
             val syncHash = syncOpt.get
             val hash = HashUtils.hashContents(normPath)
 
             if (hash != syncHash) {
-              val changed = ContentsChanged(normPath, hash)
-              log.info("Path changed: " + path)
+              val changed = ContentsChanged(normPath, syncHash, hash)
               notifyObservers(changed)
-            } else {
-              log.info("Syncs are unchanged for " + path)
             }
           }
-        } else {
-          log.info("nothing to do for path")
         }
       }
     }
