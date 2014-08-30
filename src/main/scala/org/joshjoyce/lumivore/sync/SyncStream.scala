@@ -4,7 +4,7 @@ import java.nio.file.{Paths, Path}
 import org.joshjoyce.lumivore.db.SqliteDatabase
 import org.joshjoyce.lumivore.io.{HashUtils, DirectoryPathStream}
 import org.jetlang.channels.{MemoryChannel, Channel}
-import org.jetlang.fibers.ThreadFiber
+import org.jetlang.fibers.{Fiber, ThreadFiber}
 import org.joshjoyce.lumivore.util.{LumivoreLogging, Implicits}
 
 sealed trait SyncCheckResult
