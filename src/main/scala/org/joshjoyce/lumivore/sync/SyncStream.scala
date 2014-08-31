@@ -1,6 +1,7 @@
 package org.joshjoyce.lumivore.sync
 
-import java.nio.file.{Path, Paths}
+import java.io.File
+import java.nio.file.{NoSuchFileException, Path, Paths}
 
 import org.jetlang.channels.{Channel, MemoryChannel}
 import org.jetlang.fibers.ThreadFiber
@@ -9,10 +10,13 @@ import org.joshjoyce.lumivore.io.{DirectoryPathStream, HashUtils}
 import org.joshjoyce.lumivore.util.LumivoreLogging
 
 sealed trait SyncCheckResult
+
 case class Unseen(path: Path) extends SyncCheckResult
+
 case class ContentsChanged(path: Path, oldHash: String, hash: String) extends SyncCheckResult
 
 object Test {
+
   import org.joshjoyce.lumivore.util.Implicits._
 
   def main(args: Array[String]) {
@@ -58,7 +62,6 @@ class SyncStream(database: SqliteDatabase) extends LumivoreLogging {
     log.info("Executing from root: " + root.toString)
 
     val sha1ByPath = database.getSyncs.groupBy(_._1).mapValues(_.head._2)
-
     DirectoryPathStream.recurse(root.toFile) {
       path => {
         val pathString = path.toString
@@ -67,7 +70,7 @@ class SyncStream(database: SqliteDatabase) extends LumivoreLogging {
 
         if (validExtensions.isEmpty || validExtensions.exists(loweredPath.endsWith)) {
           val syncOpt = sha1ByPath.get(pathString)
-
+          log.info("path: " + pathString)
           if (!syncOpt.isDefined) {
             val unseen = Unseen(normPath)
             notifyObservers(unseen)

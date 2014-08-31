@@ -22,12 +22,15 @@ class UploadProcess(vaultName: String, database: SqliteDatabase, uploader: Glaci
     case (u: CompleteUpload) => {
       val hash = hashByPath(u.filePath)
       try {
-        database.insertUpload(hash, u.vaultName, u.uploadResult.getArchiveId)
+        database.insertUpload(hash, u.vaultName, u.archiveId)
       } catch {
-        case (e: Exception) => log.error("Upload file but failed to write to database: " + hash + " " + u.filePath + " " + u.uploadResult.getArchiveId)
+        case (e: Exception) => log.error("Upload file but failed to write to database: " + hash + " " + u.filePath + " " + u.archiveId)
       }
     }
-    case (f: FailedUpload) => log.error("Failed upload: " + f.filePath)
+    case (f: FailedUpload) => {
+      log.error("Failed upload: " + f.filePath)
+      log.error(f.e.getMessage, f.e)
+    }
     case _ => {}
   }
 

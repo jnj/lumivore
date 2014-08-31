@@ -1,17 +1,15 @@
 package org.joshjoyce.lumivore.web
 
-import org.webbitserver.WebSocketConnection
-import org.jetlang.fibers.{ThreadFiber, Fiber}
-import org.joshjoyce.lumivore.sync._
-import org.joshjoyce.lumivore.db.SqliteDatabase
 import org.jetlang.channels.MemoryChannel
-import org.joshjoyce.lumivore.util.Implicits
-import org.joshjoyce.lumivore.sync.CompleteUpload
-import scala.Some
+import org.jetlang.fibers.{Fiber, ThreadFiber}
+import org.joshjoyce.lumivore.db.SqliteDatabase
+import org.joshjoyce.lumivore.sync.{CompleteUpload, _}
+import org.webbitserver.WebSocketConnection
+
 import scala.util.parsing.json.JSONObject
 
 class BackupResponder(database: SqliteDatabase) extends WebSocketResponder {
-  import Implicits._
+  import org.joshjoyce.lumivore.util.Implicits._
 
   private var uploaderFiber: Option[Fiber] = None
   private var resultsFiber: Option[Fiber] = None

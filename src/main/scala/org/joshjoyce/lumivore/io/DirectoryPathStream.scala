@@ -1,7 +1,7 @@
 package org.joshjoyce.lumivore.io
 
 import java.io.File
-import java.nio.file.{AccessDeniedException, Files, Path}
+import java.nio.file.{NoSuchFileException, AccessDeniedException, Files, Path}
 import scala.collection.JavaConversions
 
 object DirectoryPathStream {

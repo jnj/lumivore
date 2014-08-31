@@ -1,5 +1,7 @@
 package org.joshjoyce.lumivore.web
 
+import com.amazonaws.services.glacier.model.DescribeVaultResult
+import org.joshjoyce.lumivore.sync.VaultRetrieval
 import org.webbitserver.{HttpControl, HttpResponse, HttpRequest, HttpHandler}
 import org.fusesource.scalate.TemplateEngine
 import org.joshjoyce.lumivore.db.SqliteDatabase
@@ -17,9 +19,11 @@ class HttpRouteHandler(templateEngine: TemplateEngine, database: SqliteDatabase)
   }
 
  def renderHome(request: HttpRequest, response: HttpResponse, control: HttpControl) {
-    val records = Nil //database.queryPhotos().map(_.toString)
-    //val dupes = database.getDuplicates
+    val records = Nil
     val content = templateEngine.layout("WEB-INF/index.scaml", Map("records" -> records))
+    //val retrieval = new VaultRetrieval
+    //retrieval.init()
+    //val result: DescribeVaultResult = retrieval.retrieve("photos")
    renderOkResponse(content)(request, response, control)
   }
 
