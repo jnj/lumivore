@@ -43,7 +43,7 @@ class GlacierUploader(output: Channel[GlacierUploadAttempt]) extends LumivoreLog
       return
     }
     try {
-      if (archive.length() > 5 * 1024 * 1024) {
+      if (archive.length() > 500 * 1024 * 1024) {
         multipartUpload(archive, vaultName, percent)
       } else {
         var bytesTransferred = 0L
@@ -72,7 +72,7 @@ class GlacierUploader(output: Channel[GlacierUploadAttempt]) extends LumivoreLog
   }
 
   def multipartUpload(archive: File, vaultName: String, percent: Int): Unit = {
-    val partSize = 1024 * 1024
+    val partSize = 1024 * 1024 * 2
     val initiation = new InitiateMultipartUploadRequest(vaultName, "", partSize.toString)
     val initResult = client.initiateMultipartUpload(initiation)
 
@@ -86,23 +86,15 @@ class GlacierUploader(output: Channel[GlacierUploadAttempt]) extends LumivoreLog
     var read = 0
     var done = false
 
+    var records = List.empty[MultipartRecord]
+
     while (!done && currentPosition < archive.length()) {
       read = fis.read(buffer, filePosition, buffer.size)
       if (read > -1) {
         val bytesRead = util.Arrays.copyOf(buffer, read)
+        log.info("read %s bytes from %s".format(read, archive.toString))
         contentRange = "bytes %s-%s/*".format(currentPosition, currentPosition + read - 1)
-        val checksum = TreeHashGenerator.calculateTreeHash(new ByteArrayInputStream(bytesRead))
-        val binaryChecksum = BinaryUtils.fromHex(checksum)
-        checkSums += binaryChecksum
-
-        var partRequest = new UploadMultipartPartRequest
-        partRequest = partRequest.withVaultName(vaultName)
-        partRequest = partRequest.withBody(new ByteArrayInputStream(bytesRead))
-        partRequest = partRequest.withChecksum(checksum)
-        partRequest = partRequest.withRange(contentRange)
-        partRequest = partRequest.withUploadId(initResult.getUploadId)
-
-        val partResult = client.uploadMultipartPart(partRequest)
+        records = MultipartRecord(bytesRead, contentRange, initResult.getUploadId, vaultName) :: records
         currentPosition = currentPosition + read
       } else {
         done = true
@@ -110,6 +102,23 @@ class GlacierUploader(output: Channel[GlacierUploadAttempt]) extends LumivoreLog
     }
 
     fis.close()
+
+    records.par.foreach {
+      r => {
+        val checksum = TreeHashGenerator.calculateTreeHash(new ByteArrayInputStream(r.bytes))
+        val binaryChecksum = BinaryUtils.fromHex(checksum)
+        checkSums += binaryChecksum
+
+        var partRequest = new UploadMultipartPartRequest
+        partRequest = partRequest.withVaultName(vaultName)
+        partRequest = partRequest.withBody(new ByteArrayInputStream(r.bytes))
+        partRequest = partRequest.withChecksum(checksum)
+        partRequest = partRequest.withRange(contentRange)
+        partRequest = partRequest.withUploadId(initResult.getUploadId)
+        client.uploadMultipartPart(partRequest)
+      }
+    }
+
     val hash = TreeHashGenerator.calculateTreeHash(checkSums.toList)
     val archiveId = completeMultipartUpload(initResult.getUploadId, hash, archive, vaultName)
     output.publish(CompleteUpload(archive.getPath, vaultName, archiveId, percent))
