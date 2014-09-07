@@ -1,10 +1,8 @@
 package org.joshjoyce.lumivore.sync
 
-import java.io.File
-import java.nio.file.{NoSuchFileException, Path, Paths}
+import java.nio.file.{Path, Paths}
 
-import org.jetlang.channels.{Channel, MemoryChannel}
-import org.jetlang.fibers.ThreadFiber
+import org.jetlang.channels.Channel
 import org.joshjoyce.lumivore.db.SqliteDatabase
 import org.joshjoyce.lumivore.io.{DirectoryPathStream, HashUtils}
 import org.joshjoyce.lumivore.util.LumivoreLogging
@@ -14,28 +12,6 @@ sealed trait SyncCheckResult
 case class Unseen(path: Path) extends SyncCheckResult
 
 case class ContentsChanged(path: Path, oldHash: String, hash: String) extends SyncCheckResult
-
-object Test {
-
-  import org.joshjoyce.lumivore.util.Implicits._
-
-  def main(args: Array[String]) {
-    val fiber = new ThreadFiber()
-    fiber.start()
-    val channel = new MemoryChannel[SyncCheckResult]
-    channel.subscribe(fiber) {
-      println(_)
-    }
-
-    val db = new SqliteDatabase
-    db.connect()
-
-    val sync = new SyncStream(db)
-    sync.addObserver(channel)
-
-    sync.check(Paths.get("/media/josh/fantom1/pictures"))
-  }
-}
 
 /**
  * Examines the filesystem for paths that have not been synced.
@@ -70,8 +46,9 @@ class SyncStream(database: SqliteDatabase) extends LumivoreLogging {
 
         if (validExtensions.isEmpty || validExtensions.exists(loweredPath.endsWith)) {
           val syncOpt = sha1ByPath.get(pathString)
-          log.info("path: " + pathString)
+
           if (!syncOpt.isDefined) {
+            log.info("Unseen|" + pathString)
             val unseen = Unseen(normPath)
             notifyObservers(unseen)
           } else {
@@ -79,8 +56,11 @@ class SyncStream(database: SqliteDatabase) extends LumivoreLogging {
             val hash = HashUtils.hashContents(normPath)
 
             if (hash != syncHash) {
+              log.info("Changed|" + pathString)
               val changed = ContentsChanged(normPath, syncHash, hash)
               notifyObservers(changed)
+            } else {
+              log.info("NoChange|" + pathString)
             }
           }
         }

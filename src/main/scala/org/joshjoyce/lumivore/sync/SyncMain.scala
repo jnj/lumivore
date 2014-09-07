@@ -5,12 +5,14 @@ import java.sql.SQLException
 import java.util.concurrent.{Callable, Executors, Future}
 
 import org.jetlang.channels.MemoryChannel
+import org.jetlang.core.SynchronousDisposingExecutor
 import org.jetlang.fibers.ThreadFiber
 import org.joshjoyce.lumivore.db.SqliteDatabase
 import org.joshjoyce.lumivore.io.HashUtils
 import org.joshjoyce.lumivore.util.LumivoreLogging
 
 object SyncMain extends LumivoreLogging {
+
   import org.joshjoyce.lumivore.util.Implicits._
   import scala.collection.JavaConversions._
 
@@ -18,7 +20,8 @@ object SyncMain extends LumivoreLogging {
     val database = new SqliteDatabase
     database.connect()
 
-    val fiber = new ThreadFiber
+    val executor1 = new SynchronousDisposingExecutor
+    val fiber = new ThreadFiber(executor1, "SyncDBWriter", false)
     fiber.start()
 
     val syncChannel = new MemoryChannel[SyncCheckResult]
@@ -33,16 +36,21 @@ object SyncMain extends LumivoreLogging {
             log.warn("DUPLICATED FILE FOUND: " + path)
             database.insertDup(path.toString)
           }
+          case e => log.error("Error when attempting to insert unseen path " + path, e)
         }
       }
       case ContentsChanged(path, oldHash, hash) => {
         log.info("Contents changed %s %s -> %s".format(path, oldHash, hash))
-        database.insertContentChange(path.toString, oldHash, hash)
-        database.updateSync(path.toString, hash)
+        try {
+          database.insertContentChange(path.toString, oldHash, hash)
+          database.updateSync(path.toString, hash)
+        } catch {
+          case (e: Exception) => log.error("Error attempting to update path " + path + " old hash " + oldHash + " new hash " + hash, e)
+        }
       }
     }
 
-    val executor = Executors.newCachedThreadPool()
+    val executor = Executors.newFixedThreadPool(2)
     var callables = List.empty[Callable[Unit]]
 
     database.getWatchedDirectories.foreach {
