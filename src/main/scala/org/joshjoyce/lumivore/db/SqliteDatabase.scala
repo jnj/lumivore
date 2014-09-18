@@ -127,6 +127,15 @@ class SqliteDatabase {
     }
   }
 
+  def getDuplicates = {
+    ensureConnected()
+    withQuery("SELECT PATH FROM DUPLICATES;")(noop) {
+      mapResults(_) {
+        r => r.getString("PATH")
+      }
+    }
+  }
+
   def getGlacierUploads = {
     ensureConnected()
     withQuery("SELECT HASH, VAULT, ARCHIVE_ID FROM GLACIER_UPLOADS;")(noop) {

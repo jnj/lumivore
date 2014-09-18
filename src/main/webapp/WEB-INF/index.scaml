@@ -1,5 +1,7 @@
 -@ val watched: List[String]
 -@ val extensions: List[String]
+-@ val duplicates: Traversable[String]
+-@ val missing: Traversable[String]
 %h2 Extensions
 Only files with a whitelisted extension will be indexed. Your whitelist is:
 - if (extensions.isEmpty)
@@ -29,6 +31,22 @@ Only files with a whitelisted extension will be indexed. Your whitelist is:
     %input.form-control#watchDir{:name => "watchDir", :type => "text"}
   .btn-group
     %button.btn.btn-primary#addWatchDirButton{:type => "button"} Add
+%h2 Duplicates
+- if (duplicates.isEmpty)
+  none.
+- else
+  %ul.list-group
+    - duplicates.foreach
+      - d =>
+        %li.list-group-item #{d}
+%h2 Missing
+- if (missing.isEmpty)
+  none.
+- else
+  %ul.list-group
+    - missing.foreach
+      - d =>
+        %li.list-group-item #{d}
 :!javascript
   $(function () {
     $("#addExtButton").click(function () {

@@ -8,7 +8,6 @@ import org.joshjoyce.lumivore.db.SqliteDatabase
 class Lumivore(port: Int, templateEngine: TemplateEngine, database: SqliteDatabase) {
   private var webserver: WebServer = _
   private var running = false
-  private val routeHandler = new HttpRouteHandler(templateEngine, database)
   private val registry = createWsRegistry
 
   def start() {
@@ -17,13 +16,12 @@ class Lumivore(port: Int, templateEngine: TemplateEngine, database: SqliteDataba
       webserver = WebServers.createWebServer(port)
       webserver.add(new StaticFileHandler("src/main/webapp"))
       webserver.add("/", new HomeHandler(templateEngine, database))
-      webserver.add("/index", routeHandler)
       webserver.add("/ws", new WebSocketMessageRouter(database, registry))
       webserver.add("/backup", new BackupHandler(templateEngine))
       webserver.add("/addExtension", new AddExtensionsHandler(database))
       webserver.add("/addWatchDir", new AddWatchDirHandler(database))
       val future = webserver.start()
-      println("Web module %s started on port %s".format(getClass().getName(), port))
+      println("Web module %s started on port %s".format(getClass.getName, port))
       future.get()
     }
   }
