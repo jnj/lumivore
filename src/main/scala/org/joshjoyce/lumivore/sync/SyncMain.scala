@@ -34,7 +34,11 @@ object SyncMain extends LumivoreLogging {
         } catch {
           case (e: SQLException) if isConstraintViolation(e) => {
             log.warn("DUPLICATED FILE FOUND: " + path)
-            database.insertDup(path.toString)
+            try {
+              database.insertDup(path.toString)
+            } catch {
+              case (e: Exception) => log.warn("exception while inserting duplicate", e)
+            }
           }
           case e => log.error("Error when attempting to insert unseen path " + path, e)
         }

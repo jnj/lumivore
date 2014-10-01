@@ -38,6 +38,7 @@ class UploadProcess(vaultName: String, database: SqliteDatabase, uploader: Glaci
     runnerFiber.execute(new Runnable {
       override def run() {
         running = true
+        val indexed = database.getWatchedDirectories
         val uploads = database.getGlacierUploads.groupBy(_._1)
         log.info(uploads.size + " uploads found")
         val filteredSyncs = database.getSyncs.filterNot { case (_, sha1, _) => uploads.contains(sha1) }
@@ -47,7 +48,7 @@ class UploadProcess(vaultName: String, database: SqliteDatabase, uploader: Glaci
         }.toMap
 
         filteredSyncs.zipWithIndex.foreach {
-          case ((path, sha1, _), index) if running =>
+          case ((path, sha1, _), index) if running && indexed.exists(path.contains) =>
             log.info("Uploading " + path + " (" + (index+1) + " / " + filteredSyncs.size + ")")
             val percent = round(100.0 * (index + 1) / filteredSyncs.size).toInt
             uploader.upload(new File(path), vaultName, percent)
