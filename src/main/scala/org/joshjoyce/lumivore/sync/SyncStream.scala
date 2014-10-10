@@ -13,6 +13,8 @@ case class Unseen(path: Path) extends SyncCheckResult
 
 case class ContentsChanged(path: Path, oldHash: String, hash: String) extends SyncCheckResult
 
+case object SyncDone extends SyncCheckResult
+
 /**
  * Examines the filesystem for paths that have not been synced.
  */
@@ -66,5 +68,7 @@ class SyncStream(database: SqliteDatabase) extends LumivoreLogging {
         }
       }
     }
+    
+    observers.foreach(_.publish(SyncDone))
   }
 }

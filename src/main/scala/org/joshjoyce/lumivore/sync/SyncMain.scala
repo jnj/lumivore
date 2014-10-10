@@ -5,7 +5,7 @@ import java.sql.SQLException
 import java.util.concurrent.{Callable, Executors, Future}
 
 import org.jetlang.channels.MemoryChannel
-import org.jetlang.core.SynchronousDisposingExecutor
+import org.jetlang.core.{Disposable,SynchronousDisposingExecutor}
 import org.jetlang.fibers.ThreadFiber
 import org.joshjoyce.lumivore.db.SqliteDatabase
 import org.joshjoyce.lumivore.io.HashUtils
@@ -25,7 +25,9 @@ object SyncMain extends LumivoreLogging {
     fiber.start()
 
     val syncChannel = new MemoryChannel[SyncCheckResult]
-    syncChannel.subscribe(fiber) {
+    var disposabes = List.empty[Disposable]
+
+    val sub = syncChannel.subscribe(fiber) {
       case Unseen(path) => {
         val sha1 = HashUtils.hashContents(path)
         try {
@@ -52,6 +54,7 @@ object SyncMain extends LumivoreLogging {
           case (e: Exception) => log.error("Error attempting to update path " + path + " old hash " + oldHash + " new hash " + hash, e)
         }
       }
+      case SyncDone => fiber.dispose()
     }
 
     val executor = Executors.newFixedThreadPool(2)
@@ -71,7 +74,6 @@ object SyncMain extends LumivoreLogging {
 
     val futures: List[Future[Unit]] = executor.invokeAll(callables).toList
     futures.foreach(_.get())
-    fiber.join()
   }
 
   def isConstraintViolation(e: SQLException) = e.getMessage.toUpperCase.contains("CONSTRAINT")
