@@ -2,11 +2,11 @@ package org.joshjoyce.lumivore.sync
 
 import java.nio.file.Paths
 import java.sql.SQLException
-import java.util.concurrent.{Callable, Executors, Future}
+import java.util.concurrent.{Callable, CountDownLatch, Executors}
 
 import org.jetlang.channels.MemoryChannel
-import org.jetlang.core.{Disposable,SynchronousDisposingExecutor}
-import org.jetlang.fibers.{Fiber, ThreadFiber}
+import org.jetlang.core.RunnableExecutorImpl
+import org.jetlang.fibers.ThreadFiber
 import org.joshjoyce.lumivore.db.SqliteDatabase
 import org.joshjoyce.lumivore.io.HashUtils
 import org.joshjoyce.lumivore.util.LumivoreLogging
@@ -14,18 +14,20 @@ import org.joshjoyce.lumivore.util.LumivoreLogging
 object SyncMain extends LumivoreLogging {
 
   import org.joshjoyce.lumivore.util.Implicits._
+
   import scala.collection.JavaConversions._
 
   def main(args: Array[String]) {
     val database = new SqliteDatabase
     database.connect()
-    var toDispose: Option[Fiber] = None
-    val executor1 = new SynchronousDisposingExecutor
-    val fiber = new ThreadFiber(executor1, "SyncDBWriter", false)
-    fiber.start()
 
     val syncChannel = new MemoryChannel[SyncCheckResult]
-    var disposabes = List.empty[Disposable]
+    val fiber = new ThreadFiber(new RunnableExecutorImpl(), "MainFiber", false)
+    fiber.start()
+
+    val watchedDirectories = database.getWatchedDirectories
+    val latch = new CountDownLatch(watchedDirectories.size)
+    println("instantiated with latch size = " + watchedDirectories.size)
 
     val sub = syncChannel.subscribe(fiber) {
       case Unseen(path) => {
@@ -54,27 +56,37 @@ object SyncMain extends LumivoreLogging {
           case (e: Exception) => log.error("Error attempting to update path " + path + " old hash " + oldHash + " new hash " + hash, e)
         }
       }
-      case SyncDone => toDispose = Some(fiber)
-    }
-
-    val executor = Executors.newFixedThreadPool(2)
-    var callables = List.empty[Callable[Unit]]
-
-    database.getWatchedDirectories.foreach {
-      arg => {
-        val sync = new SyncStream(database)
-        sync.addObserver(syncChannel)
-        callables = new Callable[Unit] {
-          override def call() {
-            sync.check(Paths.get(arg))
-          }
-        } :: callables
+      case SyncDone => {
+        println("SyncDone received")
+        latch.countDown()
       }
     }
 
-    val futures: List[Future[Unit]] = executor.invokeAll(callables).toList
+    val executor = Executors.newFixedThreadPool(2)
+    var callables = watchedDirectories.map {
+      arg => {
+        val sync = new SyncStream(database)
+        sync.addObserver(syncChannel)
+        new Callable[Unit] {
+          override def call() {
+            sync.check(Paths.get(arg))
+          }
+        }
+      }
+    }
+
+    var futures = executor.invokeAll(callables)
     futures.foreach(_.get())
-    toDispose.foreach(_.dispose())
+
+    println("Done scanning")
+    callables = null
+    futures = null
+    executor.shutdown()
+    latch.await()
+    println("shutting down sub")
+    sub.dispose()
+    println("shutting down fiber")
+    fiber.dispose()
   }
 
   def isConstraintViolation(e: SQLException) = e.getMessage.toUpperCase.contains("CONSTRAINT")
