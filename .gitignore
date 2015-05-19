@@ -11,4 +11,4 @@ jquery.atmosphere.js
 AwsCredentials.properties
 boostrap*.js
 jquery*.js
-*.log
+lumivore.log*
