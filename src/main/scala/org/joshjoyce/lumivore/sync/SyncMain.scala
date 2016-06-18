@@ -44,7 +44,7 @@ object SyncMain extends LumivoreLogging {
               case (e: Exception) => log.warn("exception while inserting duplicate", e)
             }
           }
-          case e => log.error("Error when attempting to insert unseen path " + path, e)
+          case (e: Throwable) => log.error("Error when attempting to insert unseen path " + path, e)
         }
       }
       case ContentsChanged(path, oldHash, hash) => {
