@@ -12,10 +12,10 @@ class HomeHandler(templateEngine: TemplateEngine, database: SqliteDatabase) exte
   override def handleHttpRequest(request: HttpRequest, response: HttpResponse, control: HttpControl) = {
     val extensions = database.getExtensions.sorted
     val watched = database.getWatchedDirectories
-    val dupes = database.getDuplicates
-    val nonexistent = database.getSyncs.filter {
+    val dupes = Nil //database.getDuplicates
+    val nonexistent = Nil /* database.getSyncs.filter {
       case (path, _, _) => !Files.exists(Paths.get(path))
-    }.map(_._1)
+    }.map(_._1) */
     val content = templateEngine.layout("WEB-INF/index.scaml",
       Map(
         "missing" -> nonexistent,
