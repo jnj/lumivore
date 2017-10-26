@@ -52,7 +52,7 @@ class UploadProcess(vaultName: String, database: SqliteDatabase, uploader: Glaci
             log.info("Uploading " + path + " (" + (index+1) + " / " + filteredSyncs.size + ")")
             val percent = round(100.0 * (index + 1) / filteredSyncs.size).toInt
             uploader.upload(new File(path), vaultName, percent)
-          case _ =>
+          case _ => {}
         }
 
         running = false

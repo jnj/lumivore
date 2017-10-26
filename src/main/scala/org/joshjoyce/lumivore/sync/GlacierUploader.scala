@@ -1,18 +1,15 @@
 package org.joshjoyce.lumivore.sync
 
-import java.io.{ByteArrayInputStream, File, FileInputStream}
-import java.util
-import java.util.concurrent.{Executors, Callable}
+import java.io.File
+import java.util.concurrent.Executors
 
 import com.amazonaws.auth.PropertiesCredentials
 import com.amazonaws.event.{ProgressEvent, ProgressEventType, ProgressListener}
-import com.amazonaws.services.glacier.model.{CompleteMultipartUploadRequest, InitiateMultipartUploadRequest, UploadMultipartPartRequest}
+import com.amazonaws.services.glacier.AmazonGlacierClient
 import com.amazonaws.services.glacier.transfer.{ArchiveTransferManager, UploadResult}
-import com.amazonaws.services.glacier.{AmazonGlacierClient, TreeHashGenerator}
-import com.amazonaws.util.BinaryUtils
 import org.jetlang.channels.Channel
+import org.joshjoyce.lumivore.io.FileUtils
 import org.joshjoyce.lumivore.util.LumivoreLogging
-import scala.collection.JavaConversions._
 
 sealed trait GlacierUploadAttempt
 
@@ -49,13 +46,13 @@ class GlacierUploader(output: Channel[GlacierUploadAttempt]) extends LumivoreLog
     }
     try {
       var bytesTransferred = 0L
-      var totalBytes = 0L
+      val totalBytes = FileUtils.getSizeInBytes(archive.getAbsolutePath)
       output.publish(PartialUpload(archive.getAbsolutePath, 0))
       val result: UploadResult = atm.upload("-", vaultName, archive.toString, archive, new ProgressListener {
         def progressChanged(progressEvent: ProgressEvent) {
           if (progressEvent.getEventType.isByteCountEvent) {
             if (progressEvent.getEventType.equals(ProgressEventType.REQUEST_CONTENT_LENGTH_EVENT)) {
-              totalBytes = progressEvent.getBytes
+
             }
             bytesTransferred += progressEvent.getBytesTransferred
           }
