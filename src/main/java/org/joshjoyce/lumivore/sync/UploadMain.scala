@@ -1,4 +1,4 @@
-package org.joshjoyce.lumivore.sync
+package org.joshjoyce.lumivore.sync;
 
 import org.joshjoyce.lumivore.db.SqliteDatabase
 import org.joshjoyce.lumivore.util.{Implicits, LumivoreLogging}

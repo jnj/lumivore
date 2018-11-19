@@ -1,9 +1,9 @@
 package org.joshjoyce.lumivore.web
 
-import org.webbitserver.{WebServers, WebServer}
-import org.webbitserver.handler.StaticFileHandler
 import org.fusesource.scalate.TemplateEngine
 import org.joshjoyce.lumivore.db.SqliteDatabase
+import org.webbitserver.handler.StaticFileHandler
+import org.webbitserver.{WebServer, WebServers}
 
 class Lumivore(port: Int, templateEngine: TemplateEngine, database: SqliteDatabase) {
   private var webserver: WebServer = _

@@ -1,7 +1,7 @@
 package org.joshjoyce.lumivore.web
 
-import org.webbitserver.{HttpResponse, HttpRequest, HttpControl}
 import org.joshjoyce.lumivore.util.Implicits
+import org.webbitserver.{HttpControl, HttpRequest, HttpResponse}
 
 trait WebbitSupport {
   import Implicits._

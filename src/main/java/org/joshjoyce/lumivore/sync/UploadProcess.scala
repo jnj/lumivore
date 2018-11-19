@@ -1,4 +1,4 @@
-package org.joshjoyce.lumivore.sync
+package org.joshjoyce.lumivore.sync;
 
 import org.jetlang.channels.Channel
 import org.jetlang.fibers.Fiber

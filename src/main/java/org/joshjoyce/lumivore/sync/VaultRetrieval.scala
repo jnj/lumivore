@@ -1,4 +1,4 @@
-package org.joshjoyce.lumivore.sync
+package org.joshjoyce.lumivore.sync;
 
 import com.amazonaws.auth.PropertiesCredentials
 import com.amazonaws.services.glacier.AmazonGlacierClient

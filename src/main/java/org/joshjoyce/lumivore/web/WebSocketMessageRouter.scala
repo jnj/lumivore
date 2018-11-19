@@ -1,11 +1,11 @@
 package org.joshjoyce.lumivore.web
 
 import org.jetlang.fibers.ThreadFiber
-import org.joshjoyce.lumivore.util.LumivoreLogging
 import org.joshjoyce.lumivore.db.SqliteDatabase
+import org.joshjoyce.lumivore.util.LumivoreLogging
 import org.webbitserver.{WebSocketConnection, WebSocketHandler}
-import scala.collection.JavaConversions
-import scala.util.parsing.json.{JSONObject, JSON}
+
+import scala.util.parsing.json.{JSON, JSONObject}
 
 class WebSocketMessageRouter(database: SqliteDatabase, registry: Map[String, WebSocketResponder])
   extends WebSocketHandler with LumivoreLogging {

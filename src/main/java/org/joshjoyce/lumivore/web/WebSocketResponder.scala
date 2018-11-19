@@ -1,7 +1,7 @@
 package org.joshjoyce.lumivore.web
 
-import org.webbitserver.WebSocketConnection
 import org.jetlang.fibers.Fiber
+import org.webbitserver.WebSocketConnection
 
 trait WebSocketResponder {
   def msgType: String

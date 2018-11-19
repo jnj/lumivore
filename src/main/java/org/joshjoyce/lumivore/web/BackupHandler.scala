@@ -1,7 +1,7 @@
 package org.joshjoyce.lumivore.web
 
-import org.webbitserver.{HttpControl, HttpResponse, HttpRequest, HttpHandler}
 import org.fusesource.scalate.TemplateEngine
+import org.webbitserver.{HttpControl, HttpHandler, HttpRequest, HttpResponse}
 
 class BackupHandler(templateEngine: TemplateEngine) extends HttpHandler with WebbitSupport {
   override def handleHttpRequest(request: HttpRequest, response: HttpResponse, control: HttpControl) = {

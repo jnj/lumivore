@@ -1,11 +1,8 @@
 package org.joshjoyce.lumivore.web
 
-import java.io.File
-import java.nio.file.{Paths, Path, Files}
-
-import org.webbitserver.{HttpControl, HttpResponse, HttpRequest, HttpHandler}
-import org.joshjoyce.lumivore.db.SqliteDatabase
 import org.fusesource.scalate.TemplateEngine
+import org.joshjoyce.lumivore.db.SqliteDatabase
+import org.webbitserver.{HttpControl, HttpHandler, HttpRequest, HttpResponse}
 
 class HomeHandler(templateEngine: TemplateEngine, database: SqliteDatabase) extends HttpHandler with WebbitSupport {
 

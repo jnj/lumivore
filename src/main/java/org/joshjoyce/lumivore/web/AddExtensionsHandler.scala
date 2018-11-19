@@ -1,8 +1,8 @@
 package org.joshjoyce.lumivore.web
 
-import org.webbitserver.{HttpControl, HttpResponse, HttpRequest, HttpHandler}
 import org.joshjoyce.lumivore.db.SqliteDatabase
 import org.joshjoyce.lumivore.util.LumivoreLogging
+import org.webbitserver.{HttpControl, HttpHandler, HttpRequest, HttpResponse}
 
 class AddExtensionsHandler(database: SqliteDatabase) extends HttpHandler with WebbitSupport with LumivoreLogging {
   override def handleHttpRequest(request: HttpRequest, response: HttpResponse, control: HttpControl) = {

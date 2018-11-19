@@ -1,29 +1,25 @@
-package org.joshjoyce.lumivore.sync
+package org.joshjoyce.lumivore.sync;
 
-import java.nio.file.Paths
-import java.sql.SQLException
-import java.util.concurrent.{Callable, CountDownLatch, Executors}
+import org.apache.log4j.Logger;
+import org.jetlang.channels.MemoryChannel;
+import org.jetlang.core.RunnableExecutorImpl;
+import org.jetlang.fibers.Fiber;
+import org.jetlang.fibers.ThreadFiber;
+import org.joshjoyce.lumivore.io.HashUtils;
 
-import org.jetlang.channels.MemoryChannel
-import org.jetlang.core.RunnableExecutorImpl
-import org.jetlang.fibers.ThreadFiber
-import org.joshjoyce.lumivore.db.SqliteDatabase
-import org.joshjoyce.lumivore.io.HashUtils
-import org.joshjoyce.lumivore.util.LumivoreLogging
+import java.sql.SQLException;
+import java.util.concurrent.CountDownLatch;
 
-object SyncMain extends LumivoreLogging {
+public class SyncMain {
+  private static Logger log = Logger.getLogger(SyncMain.class);
 
-  import org.joshjoyce.lumivore.util.Implicits._
+  public static void main(String[] args) {
+    var database = new SqliteDatabase();
+    database.connect();
 
-  import scala.collection.JavaConversions._
-
-  def main(args: Array[String]) {
-    val database = new SqliteDatabase
-    database.connect()
-
-    val syncChannel = new MemoryChannel[SyncCheckResult]
-    val fiber = new ThreadFiber(new RunnableExecutorImpl(), "MainFiber", false)
-    fiber.start()
+    var syncChannel = new MemoryChannel<SyncCheckResult>();
+    Fiber fiber = new ThreadFiber(new RunnableExecutorImpl(), "MainFiber", false);
+    fiber.start();
 
     val watchedDirectories = database.getWatchedDirectories
     val latch = new CountDownLatch(watchedDirectories.size)
@@ -36,7 +32,8 @@ object SyncMain extends LumivoreLogging {
           database.insertSync(path.toString, sha1)
           log.info("inserted " + path + " -> " + sha1)
         } catch {
-          case (e: SQLException) if isConstraintViolation(e) => {
+          case (e:
+            SQLException) if isConstraintViolation(e) => {
             log.warn("DUPLICATED FILE FOUND: " + path)
             try {
               database.insertDup(path.toString)
