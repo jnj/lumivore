@@ -13,7 +13,7 @@ public class DirectoryPathStream {
         this.visitor = visitor;
     }
 
-    static void recurse(File root, Consumer<Path> f) {
+    public static void recurse(File root, Consumer<Path> f) {
         DirectoryPathStream d = new DirectoryPathStream(root, f);
         d.start();
     }

@@ -375,14 +375,14 @@ public class SqliteDatabase {
     }
 
     public static class Sync {
-        String s;
-        String t;
-        long l;
+        public String path;
+        public String hash;
+        public long time;
     }
 
     public static class Upload {
-        String hash;
-        String vault;
-        String uploadId;
+        public String hash;
+        public String vault;
+        public String uploadId;
     }
 }
