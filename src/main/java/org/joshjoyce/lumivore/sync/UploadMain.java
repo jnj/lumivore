@@ -27,6 +27,8 @@ public class UploadMain {
                     resultFiber.dispose();
                     doneLatch.countDown();
                 }).start();
+            } else if (attempt.status == GlacierUploadAttempt.Status.PartialUpload) {
+                //System.out.println(attempt.filePath + " " + attempt.percent + "%");
             }
         });
 

@@ -65,7 +65,7 @@ public class GlacierUploader {
                         }
                     }
                     if (totalBytes > 0) {
-                        int percent = (int) Math.round(100.0 * bytesTransferred / totalBytes);
+                        int percent = (int) Math.round(100.0 * ((double) bytesTransferred) / totalBytes);
                         var partial = new GlacierUploadAttempt(GlacierUploadAttempt.Status.PartialUpload,
                             archive.getAbsolutePath(), null, null, percent, null);
                         output.publish(partial);
