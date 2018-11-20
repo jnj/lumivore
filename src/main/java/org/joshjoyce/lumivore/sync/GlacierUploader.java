@@ -28,7 +28,7 @@ public class GlacierUploader {
         this.pool = Executors.newFixedThreadPool(10);
     }
 
-    public void init() {
+    void init() {
         try {
             PropertiesCredentials credentials = new PropertiesCredentials(Thread.currentThread().getContextClassLoader().getResourceAsStream("AwsCredentials.properties"));
             client = new AmazonGlacierClient(credentials);
@@ -44,7 +44,7 @@ public class GlacierUploader {
         pool.shutdownNow();
     }
 
-    public void upload(File archive, String vaultName, int percent) {
+    void upload(File archive, String vaultName, int percent) {
         if (!archive.exists()) {
             log.warn("Not uploading " + archive.getAbsolutePath() + " because it doesn't exist");
             return;

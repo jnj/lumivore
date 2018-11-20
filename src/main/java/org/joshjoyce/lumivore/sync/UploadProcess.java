@@ -50,7 +50,7 @@ public class UploadProcess {
         });
     }
 
-    public void start() {
+    void start() {
         runnerFiber.execute(() -> {
             running.set(true);
             var indexed = database.getWatchedDirectories();
@@ -59,12 +59,12 @@ public class UploadProcess {
             var filteredSyncs = database.getSyncs().stream().filter(s -> !uploads.containsKey(s.hash)).collect(Collectors.toList());
             hashByPath.putAll(filteredSyncs.stream().collect(Collectors.toMap(t -> t.path, t -> t.hash)));
 
-            for (int j = 0; j < filteredSyncs.size(); j++) {
-                SqliteDatabase.Sync sync = filteredSyncs.get(j);
+            for (int i = 0; i < filteredSyncs.size(); i++) {
+                SqliteDatabase.Sync sync = filteredSyncs.get(i);
 
                 if (running.get() && indexed.stream().anyMatch(sync.path::contains)) {
-                    log.info("Uploading " + sync.path + " (" + (j + 1) + " / " + filteredSyncs.size() + ")");
-                    var percent = (int) Math.round(100.0 * (j + 1) / filteredSyncs.size());
+                    log.info("Uploading " + sync.path + " (" + (i + 1) + " / " + filteredSyncs.size() + ")");
+                    var percent = (int) Math.round(100.0 * (i + 1) / filteredSyncs.size());
                     uploader.upload(new File(sync.path), vaultName, percent);
                 }
             }
