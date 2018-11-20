@@ -5,86 +5,108 @@ import org.jetlang.channels.MemoryChannel;
 import org.jetlang.core.RunnableExecutorImpl;
 import org.jetlang.fibers.Fiber;
 import org.jetlang.fibers.ThreadFiber;
+import org.joshjoyce.lumivore.db.SqliteDatabase;
 import org.joshjoyce.lumivore.io.HashUtils;
 
+import java.nio.file.Paths;
 import java.sql.SQLException;
-import java.util.concurrent.CountDownLatch;
+import java.util.List;
+import java.util.concurrent.*;
+import java.util.stream.Collectors;
 
 public class SyncMain {
-  private static Logger log = Logger.getLogger(SyncMain.class);
+    private static Logger log = Logger.getLogger(SyncMain.class);
 
-  public static void main(String[] args) {
-    var database = new SqliteDatabase();
-    database.connect();
+    public static void main(String[] args) {
+        var database = new SqliteDatabase();
+        database.connect();
 
-    var syncChannel = new MemoryChannel<SyncCheckResult>();
-    Fiber fiber = new ThreadFiber(new RunnableExecutorImpl(), "MainFiber", false);
-    fiber.start();
+        var syncChannel = new MemoryChannel<SyncCheckResult>();
+        Fiber fiber = new ThreadFiber(new RunnableExecutorImpl(), "MainFiber", false);
+        fiber.start();
 
-    val watchedDirectories = database.getWatchedDirectories
-    val latch = new CountDownLatch(watchedDirectories.size)
-    println("instantiated with latch size = " + watchedDirectories.size)
+        var watchedDirectories = database.getWatchedDirectories();
+        var latch = new CountDownLatch(watchedDirectories.size());
+        System.out.println("instantiated with latch size = " + watchedDirectories.size());
 
-    val sub = syncChannel.subscribe(fiber) {
-      case Unseen(path) => {
-        val sha1 = HashUtils.hashContents(path)
-        try {
-          database.insertSync(path.toString, sha1)
-          log.info("inserted " + path + " -> " + sha1)
-        } catch {
-          case (e:
-            SQLException) if isConstraintViolation(e) => {
-            log.warn("DUPLICATED FILE FOUND: " + path)
-            try {
-              database.insertDup(path.toString)
-            } catch {
-              case (e: Exception) => log.warn("exception while inserting duplicate", e)
+        var sub = syncChannel.subscribe(fiber, m -> {
+            var path = m.path;
+            var oldHash = m.oldHash;
+            var hash = m.hash;
+
+            switch (m.status) {
+                case Unseen: {
+                    var sha1 = HashUtils.hashContents(path);
+                    try {
+                        database.insertSync(path.toString(), sha1);
+                        log.info("inserted " + path + " -> " + sha1);
+                    } catch (Exception e) {
+                        log.warn("DUPLICATED FILE FOUND: " + path.toString());
+                        try {
+                            database.insertDup(path.toString());
+                        } catch (Exception ee) {
+                            log.warn("exception while inserting duplicate", ee);
+                        }
+                    }
+                }
+                return;
+                case ContentsChanged: {
+                    log.info(String.format("Contents changed %s %s -> %s", path.toString(), oldHash, hash));
+                    try {
+                        database.insertContentChange(path.toString(), oldHash, hash);
+                        database.updateSync(path.toString(), hash);
+                    } catch (Exception e) {
+                        log.error("Error attempting to update path " + path.toString() + " old hash " + oldHash + " new hash " + hash, e);
+                    }
+                }
+                return;
+                case SyncDone: {
+                    System.out.println("SyncDone received");
+                    latch.countDown();
+                }
             }
-          }
-          case (e: Throwable) => log.error("Error when attempting to insert unseen path " + path, e)
-        }
-      }
-      case ContentsChanged(path, oldHash, hash) => {
-        log.info("Contents changed %s %s -> %s".format(path, oldHash, hash))
+        });
+
+        var executor = Executors.newFixedThreadPool(2);
+        var callables = watchedDirectories.stream().map(arg -> {
+            var sync = new SyncStream(database);
+            sync.addObserver(syncChannel);
+            return (Callable<Object>) () -> {
+                sync.check(Paths.get(arg));
+                return null;
+            };
+        }).collect(Collectors.toList());
+
+        List<Future<Object>> futures;
         try {
-          database.insertContentChange(path.toString, oldHash, hash)
-          database.updateSync(path.toString, hash)
-        } catch {
-          case (e: Exception) => log.error("Error attempting to update path " + path + " old hash " + oldHash + " new hash " + hash, e)
+            futures = executor.invokeAll(callables);
+            futures.forEach(future -> {
+                try {
+                    future.get();
+                } catch (InterruptedException | ExecutionException e) {
+                    throw new RuntimeException(e);
+                }
+            });
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
         }
-      }
-      case SyncDone => {
-        println("SyncDone received")
-        latch.countDown()
-      }
+
+        System.out.println("Done scanning");
+        callables = null;
+        futures = null;
+        executor.shutdown();
+        try {
+            latch.await();
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+        System.out.println("shutting down sub");
+        sub.dispose();
+        System.out.println("shutting down fiber");
+        fiber.dispose();
     }
 
-    val executor = Executors.newFixedThreadPool(2)
-    var callables = watchedDirectories.map {
-      arg => {
-        val sync = new SyncStream(database)
-        sync.addObserver(syncChannel)
-        new Callable[Unit] {
-          override def call() {
-            sync.check(Paths.get(arg))
-          }
-        }
-      }
+    private static boolean isConstraintViolation(SQLException e) {
+        return e.getMessage().toUpperCase().contains("CONSTRAINT");
     }
-
-    var futures = executor.invokeAll(callables)
-    futures.foreach(_.get())
-
-    println("Done scanning")
-    callables = null
-    futures = null
-    executor.shutdown()
-    latch.await()
-    println("shutting down sub")
-    sub.dispose()
-    println("shutting down fiber")
-    fiber.dispose()
-  }
-
-  def isConstraintViolation(e: SQLException) = e.getMessage.toUpperCase.contains("CONSTRAINT")
 }

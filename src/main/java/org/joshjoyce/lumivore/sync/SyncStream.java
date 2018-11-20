@@ -60,13 +60,13 @@ public class SyncStream {
 
                 if (syncOpt == null) {
                     log.info("Unseen|" + pathString);
-                    notifyObservers(SyncCheckResult.unseen(normPath.toString()));
+                    notifyObservers(SyncCheckResult.unseen(normPath));
                 } else {
                     var hash = HashUtils.hashContents(normPath);
 
                     if (!hash.equals(syncOpt)) {
                         log.info("Changed|" + pathString);
-                        notifyObservers(SyncCheckResult.contentsChanged(normPath.toString(), syncOpt, hash));
+                        notifyObservers(SyncCheckResult.contentsChanged(normPath, syncOpt, hash));
                     } else {
                         log.info("NoChange|" + pathString);
                     }

@@ -241,9 +241,9 @@ public class SqliteDatabase {
                 rs -> {
                     try {
                         var sync = new Sync();
-                        sync.s = rs.getString("PATH");
-                        sync.t = rs.getString("SHA1");
-                        sync.l = rs.getLong("SYNC_TIME");
+                        sync.path = rs.getString("PATH");
+                        sync.hash = rs.getString("SHA1");
+                        sync.time = rs.getLong("SYNC_TIME");
                         return sync;
                     } catch (SQLException e) {
                         throw new RuntimeException(e);
@@ -289,9 +289,9 @@ public class SqliteDatabase {
         return withQuery("SELECT PATH, SHA1, SYNC_TIME FROM SYNCS;", NO_OP, r -> {
             try {
                 var sync = new Sync();
-                sync.s = r.getString("PATH");
-                sync.t = r.getString("SHA1");
-                sync.l = r.getLong("SYNC_TIME");
+                sync.path = r.getString("PATH");
+                sync.hash = r.getString("SHA1");
+                sync.time = r.getLong("SYNC_TIME");
                 return sync;
             } catch (SQLException e) {
                 throw new RuntimeException(e);
@@ -310,21 +310,19 @@ public class SqliteDatabase {
         });
     }
 
-    public void getGlacierUploads() {
+    public List<Upload> getGlacierUploads() {
         ensureConnected();
-        withQuery("SELECT HASH, VAULT, ARCHIVE_ID FROM GLACIER_UPLOADS;", NO_OP, rs ->
-                mapResults(rs, r -> {
-                    try {
-                        var u = new Upload();
-                        u.hash = r.getString("HASH");
-                        u.vault = r.getString("VAULT");
-                        u.uploadId = r.getString("ARCHIVE_ID");
-                        return u;
-                    } catch (SQLException e) {
-                        throw new RuntimeException(e);
-                    }
-                })
-        );
+        return withQuery("SELECT HASH, VAULT, ARCHIVE_ID FROM GLACIER_UPLOADS;", NO_OP, rs -> {
+            try {
+                var u = new Upload();
+                u.hash = rs.getString("HASH");
+                u.vault = rs.getString("VAULT");
+                u.uploadId = rs.getString("ARCHIVE_ID");
+                return u;
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
 
     public void addExtension(String ext) {

@@ -5,7 +5,6 @@ import java.io.File;
 import org.fusesource.scalate.TemplateEngine;
 import org.fusesource.scalate.layout.DefaultLayoutStrategy;
 import org.joshjoyce.lumivore.db.SqliteDatabase;
-import org.joshjoyce.lumivore.web.Lumivore;
 
 public class Main {
     public static void main(String[] args) {
