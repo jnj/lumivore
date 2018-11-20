@@ -1,0 +1,9 @@
+
+"org.jetlang" % "jetlang" % "0.2.12"
+
+"org.xerial" % "sqlite-jdbc" % "3.7.15-M1"
+
+"org.slf4j" % "slf4j-log4j12" % "1.7.7"
+
+"com.amazonaws" % "aws-java-sdk" % "1.8.6"
+
