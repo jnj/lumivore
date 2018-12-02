@@ -21,16 +21,20 @@ public class HashUtils {
 
     public static String hashContents(Path path) {
         try {
-            DigestInputStream dis = new DigestInputStream(new BufferedInputStream(new FileInputStream(path.toFile())), digest);
-            byte[] buffer = new byte[8192];
+            byte[] sha1Bytes;
 
-            while (dis.read(buffer) != -1) {
-                // nothing to do
+            try (var in = new FileInputStream(path.toFile());
+                 var bis = new BufferedInputStream(in);
+                 var dis = new DigestInputStream(bis, digest)) {
+                var buffer = new byte[8192];
+
+                while (dis.read(buffer) != -1) {
+                    // nothing to do
+                }
+
+                sha1Bytes = HashUtils.digest.digest();
             }
-
-            byte[] sha1Bytes = HashUtils.digest.digest();
-            dis.close();
-            String hash = DatatypeConverter.printHexBinary(sha1Bytes);
+            var hash = DatatypeConverter.printHexBinary(sha1Bytes);
             HashUtils.digest.reset();
             return hash;
         } catch (Exception e) {

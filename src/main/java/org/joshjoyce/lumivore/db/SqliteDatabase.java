@@ -44,16 +44,6 @@ public class SqliteDatabase {
         };
     }
 
-    private static <A> Function<ResultSet, A> safeMapper(Function<ResultSet, A> mapper) {
-        return rs -> {
-            try {
-                return mapper.apply(rs);
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        };
-    }
-
     public void connect() {
         try {
             conn = DriverManager.getConnection("jdbc:sqlite:photos.db");
@@ -78,21 +68,6 @@ public class SqliteDatabase {
         }
     }
 
-    private <A> List<A> mapResults(ResultSet r, Function<ResultSet, A> f) {
-        var results = new ArrayList<A>();
-
-        try {
-            while (r.next()) {
-                var x = f.apply(r);
-                results.add(x);
-            }
-
-            return results;
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
     private void executeUpdate(String sql) {
         withStatement(s -> {
             try {
@@ -104,7 +79,7 @@ public class SqliteDatabase {
     }
 
     private <A> A withStatement(Function<Statement, A> f) {
-        try (Statement stmt = conn.createStatement()) {
+        try (var stmt = conn.createStatement()) {
             return f.apply(stmt);
         } catch (SQLException e) {
             throw new RuntimeException(e);
@@ -112,7 +87,7 @@ public class SqliteDatabase {
     }
 
     private <A> void executeWithPreparedStatement(String sql, Function<PreparedStatement, A> f) {
-        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+        try (var stmt = conn.prepareStatement(sql)) {
             f.apply(stmt);
             stmt.execute();
         } catch (SQLException e) {
@@ -120,7 +95,7 @@ public class SqliteDatabase {
         }
     }
 
-    public void createTables() {
+    void createTables() {
         ensureConnected();
         var sql =
                 "DROP TABLE IF EXISTS SYNCS; " +
@@ -138,7 +113,7 @@ public class SqliteDatabase {
         executeUpdate(sql);
     }
 
-    public void createIndexes() {
+    void createIndexes() {
         ensureConnected();
         var sql =
                 "CREATE INDEX IF NOT EXISTS SYNC_PATH_INDEX ON SYNCS(PATH); " +
@@ -255,20 +230,11 @@ public class SqliteDatabase {
     }
 
     private <A> List<A> withQuery(String sql, Consumer<PreparedStatement> bindVals, Function<ResultSet, A> mapper) {
-        PreparedStatement stmt = null;
-        try {
-            stmt = conn.prepareStatement(sql);
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
             bindVals.accept(stmt);
             return withResultSet(stmt.executeQuery(), mapper);
         } catch (SQLException e) {
             throw new RuntimeException(e);
-        } finally {
-            if (stmt != null) {
-                try {
-                    stmt.close();
-                } catch (SQLException e) {
-                }
-            }
         }
     }
 

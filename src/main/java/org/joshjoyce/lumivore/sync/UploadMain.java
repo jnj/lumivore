@@ -17,7 +17,7 @@ public class UploadMain {
 
         resultFiber.start();
         runnerFiber.start();
-        CountDownLatch doneLatch = new CountDownLatch(1);
+        var doneLatch = new CountDownLatch(1);
 
         var uploadResultChannel = new MemoryChannel<GlacierUploadAttempt>();
         uploadResultChannel.subscribe(resultFiber, attempt -> {

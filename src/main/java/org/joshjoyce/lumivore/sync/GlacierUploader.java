@@ -30,7 +30,7 @@ public class GlacierUploader {
 
     void init() {
         try {
-            PropertiesCredentials credentials = new PropertiesCredentials(Thread.currentThread().getContextClassLoader().getResourceAsStream("AwsCredentials.properties"));
+            var credentials = new PropertiesCredentials(Thread.currentThread().getContextClassLoader().getResourceAsStream("AwsCredentials.properties"));
             client = new AmazonGlacierClient(credentials);
             client.setEndpoint("https://glacier.us-east-1.amazonaws.com/");
             atm = new ArchiveTransferManager(client, credentials);
@@ -58,7 +58,7 @@ public class GlacierUploader {
 
                 @Override
                 public void progressChanged(ProgressEvent event) {
-                    ProgressEventType type = event.getEventType();
+                    var type = event.getEventType();
                     if (type.isByteCountEvent()) {
                         if (type.equals(ProgressEventType.REQUEST_CONTENT_LENGTH_EVENT)) {
                             bytesTransferred += event.getBytesTransferred();
@@ -83,6 +83,3 @@ public class GlacierUploader {
         }
     }
 }
-
-
-// TODO multipart upload

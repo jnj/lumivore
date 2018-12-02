@@ -14,7 +14,7 @@ public class DirectoryPathStream {
     }
 
     public static void recurse(File root, Consumer<Path> f) {
-        DirectoryPathStream d = new DirectoryPathStream(root, f);
+        var d = new DirectoryPathStream(root, f);
         d.start();
     }
 
@@ -23,10 +23,10 @@ public class DirectoryPathStream {
             visitor.accept(dir.toPath());
         } else {
             try {
-                DirectoryStream<Path> children = Files.newDirectoryStream(dir.toPath());
+                var children = Files.newDirectoryStream(dir.toPath());
                 children.forEach(
                     c -> {
-                        DirectoryPathStream s = new DirectoryPathStream(c.toFile(), visitor);
+                        var s = new DirectoryPathStream(c.toFile(), visitor);
                         s.start();
                     }
                 );

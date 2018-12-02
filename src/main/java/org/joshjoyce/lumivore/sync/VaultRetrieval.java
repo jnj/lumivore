@@ -14,7 +14,7 @@ public class VaultRetrieval {
 
     public void init() {
         try {
-            PropertiesCredentials credentials = new PropertiesCredentials(Thread.currentThread().getContextClassLoader().getResourceAsStream("AwsCredentials.properties"));
+            var credentials = new PropertiesCredentials(Thread.currentThread().getContextClassLoader().getResourceAsStream("AwsCredentials.properties"));
             client = new AmazonGlacierClient(credentials);
             client.setEndpoint("https://glacier.us-east-1.amazonaws.com/");
             atm = new ArchiveTransferManager(client, credentials);

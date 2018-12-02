@@ -59,8 +59,8 @@ public class UploadProcess {
             var filteredSyncs = database.getSyncs().stream().filter(s -> !uploads.containsKey(s.hash)).collect(Collectors.toList());
             hashByPath.putAll(filteredSyncs.stream().collect(Collectors.toMap(t -> t.path, t -> t.hash)));
 
-            for (int i = 0; i < filteredSyncs.size(); i++) {
-                SqliteDatabase.Sync sync = filteredSyncs.get(i);
+            for (var i = 0; i < filteredSyncs.size(); i++) {
+                var sync = filteredSyncs.get(i);
 
                 if (running.get() && indexed.stream().anyMatch(sync.path::contains)) {
                     log.info("Uploading " + sync.path + " (" + (i + 1) + " / " + filteredSyncs.size() + ")");

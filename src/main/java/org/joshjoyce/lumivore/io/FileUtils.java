@@ -4,7 +4,7 @@ import java.io.File;
 
 public class FileUtils {
     public static long getSizeInBytes(String path) {
-        File file = new File(path);
+        var file = new File(path);
         return file.length();
     }
 
