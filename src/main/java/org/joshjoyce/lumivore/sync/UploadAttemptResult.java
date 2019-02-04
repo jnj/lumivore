@@ -16,6 +16,10 @@ public class UploadAttemptResult {
     public final int percent;
     public final Throwable exception;
 
+    public static UploadAttemptResult done() {
+        return new UploadAttemptResult(UploadAttemptResult.Status.Done, null, null, null, 100, null);
+    }
+
     UploadAttemptResult(Status status, String filePath, String vaultName, String archiveId, int percent, Throwable exception) {
         this.status = status;
         this.filePath = filePath;

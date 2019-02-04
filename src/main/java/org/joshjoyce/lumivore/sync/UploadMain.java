@@ -22,8 +22,8 @@ public class UploadMain {
         final var uploader = new GlacierUploader(channel);
         uploader.init();
 
-        final var upload = new UploadProcess("photos", database, uploader, channel, runnerFiber, resultFiber);
-        upload.start();
+        final var upload = new UploadProcess("photos", database, uploader, channel, resultFiber);
+        runnerFiber.execute(upload);
 
         try {
             latch.await();
