@@ -1,6 +1,6 @@
 package org.joshjoyce.lumivore.sync;
 
-public class GlacierUploadAttempt {
+public class UploadAttemptResult {
 
     public enum Status {
         Complete,
@@ -16,7 +16,7 @@ public class GlacierUploadAttempt {
     public final int percent;
     public final Throwable exception;
 
-    GlacierUploadAttempt(Status status, String filePath, String vaultName, String archiveId, int percent, Throwable exception) {
+    UploadAttemptResult(Status status, String filePath, String vaultName, String archiveId, int percent, Throwable exception) {
         this.status = status;
         this.filePath = filePath;
         this.vaultName = vaultName;

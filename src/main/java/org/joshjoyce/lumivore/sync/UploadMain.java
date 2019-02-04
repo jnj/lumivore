@@ -1,6 +1,8 @@
 package org.joshjoyce.lumivore.sync;
 
+import org.jetlang.channels.Channel;
 import org.jetlang.channels.MemoryChannel;
+import org.jetlang.fibers.Fiber;
 import org.jetlang.fibers.ThreadFiber;
 import org.joshjoyce.lumivore.db.SqliteDatabase;
 
@@ -9,39 +11,43 @@ import java.util.concurrent.CountDownLatch;
 public class UploadMain {
 
     public static void main(String[] args) {
-        var database = new SqliteDatabase();
+        final var database = new SqliteDatabase();
         database.connect();
 
-        var resultFiber = new ThreadFiber();
-        var runnerFiber = new ThreadFiber();
-
-        resultFiber.start();
-        runnerFiber.start();
-        var doneLatch = new CountDownLatch(1);
-
-        var uploadResultChannel = new MemoryChannel<GlacierUploadAttempt>();
-        uploadResultChannel.subscribe(resultFiber, attempt -> {
-            if (attempt.status == GlacierUploadAttempt.Status.Done) {
-                new Thread(() -> {
-                    runnerFiber.dispose();
-                    resultFiber.dispose();
-                    doneLatch.countDown();
-                }).start();
-            } else if (attempt.status == GlacierUploadAttempt.Status.PartialUpload) {
-                //System.out.println(attempt.filePath + " " + attempt.percent + "%");
-            }
-        });
-
-        var uploader = new GlacierUploader(uploadResultChannel);
+        final var resultFiber = newFiber();
+        final var runnerFiber = newFiber();
+        final var latch = new CountDownLatch(1);
+        final var channel = new MemoryChannel<UploadAttemptResult>();
+        final var workflow = new ResultsWorkflow(channel, resultFiber, latch);
+        final var uploader = new GlacierUploader(channel);
         uploader.init();
 
-        var upload = new UploadProcess("photos", database, uploader, uploadResultChannel, runnerFiber, resultFiber);
+        final var upload = new UploadProcess("photos", database, uploader, channel, runnerFiber, resultFiber);
         upload.start();
 
         try {
-            doneLatch.await();
+            latch.await();
         } catch (InterruptedException e) {
             e.printStackTrace();
+        }
+
+        resultFiber.dispose();
+        runnerFiber.dispose();
+    }
+
+    private static Fiber newFiber() {
+        var fiber = new ThreadFiber();
+        fiber.start();
+        return fiber;
+    }
+
+    static class ResultsWorkflow {
+        ResultsWorkflow(Channel<UploadAttemptResult> channel, Fiber fiber, CountDownLatch latch) {
+            channel.subscribe(fiber, result -> {
+                if (result.status == UploadAttemptResult.Status.Done) {
+                    latch.countDown();
+                }
+           });
         }
     }
 }

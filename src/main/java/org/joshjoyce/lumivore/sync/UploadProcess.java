@@ -8,26 +8,30 @@ import org.joshjoyce.lumivore.db.SqliteDatabase;
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 
 public class UploadProcess {
     private static final Logger log = Logger.getLogger(UploadProcess.class);
 
+    private static final UploadAttemptResult DONE =
+            new UploadAttemptResult(UploadAttemptResult.Status.Done, null, null, null, 100, null);
+
+    private final Channel<UploadAttemptResult> channel;
     private final Fiber runnerFiber;
     private final String vaultName;
     private final SqliteDatabase database;
     private final GlacierUploader uploader;
 
-    private AtomicBoolean running = new AtomicBoolean(false);
     private Map<String, String> hashByPath = new HashMap<>();
 
     public UploadProcess(String vaultName, SqliteDatabase database, GlacierUploader uploader,
-                         Channel<GlacierUploadAttempt> resultsChannel,
+                         Channel<UploadAttemptResult> resultsChannel,
                          Fiber runnerFiber, Fiber resultsFiber) {
+
         this.vaultName = vaultName;
         this.database = database;
+        this.channel = resultsChannel;
         this.runnerFiber = runnerFiber;
         this.uploader = uploader;
 
@@ -52,28 +56,27 @@ public class UploadProcess {
 
     void start() {
         runnerFiber.execute(() -> {
-            running.set(true);
             var indexed = database.getWatchedDirectories();
             var uploads = database.getGlacierUploads().stream().collect(Collectors.groupingBy(u -> u.hash));
             log.info(uploads.size() + " uploads found");
-            var filteredSyncs = database.getSyncs().stream().filter(s -> !uploads.containsKey(s.hash)).collect(Collectors.toList());
+
+            var filteredSyncs = database.getSyncs()
+                    .stream()
+                    .filter(s -> !uploads.containsKey(s.hash))
+                    .collect(Collectors.toList());
             hashByPath.putAll(filteredSyncs.stream().collect(Collectors.toMap(t -> t.path, t -> t.hash)));
 
             for (var i = 0; i < filteredSyncs.size(); i++) {
                 var sync = filteredSyncs.get(i);
 
-                if (running.get() && indexed.stream().anyMatch(sync.path::contains)) {
+                if (indexed.stream().anyMatch(sync.path::contains)) {
                     log.info("Uploading " + sync.path + " (" + (i + 1) + " / " + filteredSyncs.size() + ")");
                     var percent = (int) Math.round(100.0 * (i + 1) / filteredSyncs.size());
                     uploader.upload(new File(sync.path), vaultName, percent);
                 }
             }
 
-            running.set(false);
+            channel.publish(DONE);
         });
-    }
-
-    public void stop() {
-        running.set(false);
     }
 }

@@ -21,9 +21,9 @@ public class GlacierUploader {
     private AmazonGlacierClient client;
     private ArchiveTransferManager atm;
     private final ExecutorService pool;
-    private final Channel<GlacierUploadAttempt> output;
+    private final Channel<UploadAttemptResult> output;
 
-    public GlacierUploader(Channel<GlacierUploadAttempt> output) {
+    public GlacierUploader(Channel<UploadAttemptResult> output) {
         this.output = output;
         this.pool = Executors.newFixedThreadPool(10);
     }
@@ -51,7 +51,7 @@ public class GlacierUploader {
         }
         try {
             final var totalBytes = FileUtils.getSizeInBytes(archive.getAbsolutePath());
-            output.publish(new GlacierUploadAttempt(GlacierUploadAttempt.Status.PartialUpload, archive.getAbsolutePath(), null, null, 0, null));
+            output.publish(new UploadAttemptResult(UploadAttemptResult.Status.PartialUpload, archive.getAbsolutePath(), null, null, 0, null));
 
             var progressListener = new ProgressListener() {
                 private long bytesTransferred;
@@ -66,7 +66,7 @@ public class GlacierUploader {
                     }
                     if (totalBytes > 0) {
                         int percent = (int) Math.round(100.0 * ((double) bytesTransferred) / totalBytes);
-                        var partial = new GlacierUploadAttempt(GlacierUploadAttempt.Status.PartialUpload,
+                        var partial = new UploadAttemptResult(UploadAttemptResult.Status.PartialUpload,
                             archive.getAbsolutePath(), null, null, percent, null);
                         output.publish(partial);
                     }
@@ -74,11 +74,11 @@ public class GlacierUploader {
             };
             var result = atm.upload("-", vaultName, archive.toString(), archive, progressListener);
             log.info(String.format("%s|%s", archive.getAbsolutePath(), result.getArchiveId()));
-            var complete = new GlacierUploadAttempt(GlacierUploadAttempt.Status.Complete, archive.getPath(),
+            var complete = new UploadAttemptResult(UploadAttemptResult.Status.Complete, archive.getPath(),
                     vaultName, result.getArchiveId(), percent, null);
             output.publish(complete);
         } catch (Exception e) {
-            output.publish(new GlacierUploadAttempt(GlacierUploadAttempt.Status.FailedUpload, archive.getPath(),
+            output.publish(new UploadAttemptResult(UploadAttemptResult.Status.FailedUpload, archive.getPath(),
                     vaultName, null, percent, e));
         }
     }
