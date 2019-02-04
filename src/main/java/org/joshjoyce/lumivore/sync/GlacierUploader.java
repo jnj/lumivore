@@ -1,27 +1,33 @@
 package org.joshjoyce.lumivore.sync;
 
-import com.amazonaws.auth.PropertiesCredentials;
+import com.amazonaws.auth.ClasspathPropertiesFileCredentialsProvider;
+import com.amazonaws.client.builder.AwsClientBuilder;
 import com.amazonaws.event.ProgressEvent;
 import com.amazonaws.event.ProgressEventType;
 import com.amazonaws.event.ProgressListener;
-import com.amazonaws.services.glacier.AmazonGlacierClient;
+import com.amazonaws.regions.Regions;
+import com.amazonaws.services.glacier.AmazonGlacier;
+import com.amazonaws.services.glacier.AmazonGlacierClientBuilder;
 import com.amazonaws.services.glacier.transfer.ArchiveTransferManager;
+import com.amazonaws.services.glacier.transfer.ArchiveTransferManagerBuilder;
 import org.apache.log4j.Logger;
 import org.jetlang.channels.Channel;
 import org.joshjoyce.lumivore.io.FileUtils;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class GlacierUploader {
     private static final Logger log = Logger.getLogger(GlacierUploader.class);
 
-    private AmazonGlacierClient client;
+    private AmazonGlacier client;
     private ArchiveTransferManager atm;
     private final ExecutorService pool;
     private final Channel<UploadAttemptResult> output;
+
+    private final String endpoint = "https://glacier.us-east-1.amazonaws.com/";
+    private final Regions region = Regions.US_EAST_1;
 
     public GlacierUploader(Channel<UploadAttemptResult> output) {
         this.output = output;
@@ -29,14 +35,15 @@ public class GlacierUploader {
     }
 
     void init() {
-        try {
-            var credentials = new PropertiesCredentials(Thread.currentThread().getContextClassLoader().getResourceAsStream("AwsCredentials.properties"));
-            client = new AmazonGlacierClient(credentials);
-            client.setEndpoint("https://glacier.us-east-1.amazonaws.com/");
-            atm = new ArchiveTransferManager(client, credentials);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        var builder =
+                AmazonGlacierClientBuilder.standard()
+                .withCredentials(new ClasspathPropertiesFileCredentialsProvider("AwsCredentials.properties"))
+                .withEndpointConfiguration(new AwsClientBuilder.EndpointConfiguration(endpoint, region.getName()));
+
+        client = builder.build();
+
+        var atmBuilder = new ArchiveTransferManagerBuilder().withGlacierClient(client);
+        atm = atmBuilder.build();
     }
 
     public void stop() {

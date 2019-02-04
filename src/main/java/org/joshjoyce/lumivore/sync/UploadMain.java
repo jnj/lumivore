@@ -33,6 +33,7 @@ public class UploadMain {
 
         resultFiber.dispose();
         runnerFiber.dispose();
+        uploader.stop();
     }
 
     private static Fiber newFiber() {
