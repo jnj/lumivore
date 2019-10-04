@@ -1,36 +1,19 @@
 package org.joshjoyce.lumivore;
 
-import org.joshjoyce.lumivore.db.SqliteDatabase;
-
-import java.util.Scanner;
+import javax.swing.*;
+import java.awt.*;
 
 public class Main {
     public static void main(String[] args) {
-        var database = new SqliteDatabase();
-        database.connect();
-
-        String line = null;
-        var scanner = new Scanner(System.in);
-        printMenu();
-        while ((line = scanner.nextLine()) != null) {
-            var trimmed = line.trim();
-            switch (trimmed) {
-                case "1":
-                    System.out.println("Performing sync...");
-                    break;
-                case "2":
-                    System.out.println("Performing upload...");
-                    break;
-                default:
-                    continue;
-            }
-        }
-    }
-
-    static void printMenu() {
-        System.out.println("SELECT:\n" +
-                           "-------\n" +
-                           "(1) Sync\n" +
-                           "(2) Upload");
+        var frame = new JFrame("Lumivore");
+        frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+        var menuBar = new JMenuBar();
+        var fileMenu = new JMenu();
+        menuBar.add(fileMenu);
+        fileMenu.add(new JMenuItem("File"));
+        frame.add(menuBar);
+        frame.setLayout(new FlowLayout());
+        frame.pack();
+        frame.setVisible(true);
     }
 }
