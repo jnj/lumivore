@@ -3,7 +3,6 @@ package org.joshjoyce.lumivore;
 import org.jetlang.fibers.Fiber;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 public class Module implements HasLifecycle {
@@ -15,17 +14,7 @@ public class Module implements HasLifecycle {
     }
 
     public Fiber register(Fiber fiber) {
-        register(new HasLifecycle() {
-            @Override
-            public void start() {
-                fiber.start();
-            }
-
-            @Override
-            public void stop() {
-                fiber.dispose();
-            }
-        });
+        register(new FiberLifecycle(fiber));
         return fiber;
     }
 
@@ -36,8 +25,11 @@ public class Module implements HasLifecycle {
 
     @Override
     public void stop() {
-        final var reversed = new ArrayList<>(components);
-        Collections.reverse(reversed);
-        reversed.forEach(Stoppable::stop);
+        final var iter = new ReverseIterator<>(new ArrayList<>(components));
+
+        while (iter.hasNext()) {
+            final var next = iter.next();
+            next.stop();
+        }
     }
 }
