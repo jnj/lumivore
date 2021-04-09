@@ -2,13 +2,7 @@ package org.joshjoyce.lumivore;
 
 import org.jetlang.fibers.Fiber;
 
-public class FiberLifecycle implements HasLifecycle {
-
-    private final Fiber fiber;
-
-    public FiberLifecycle(Fiber fiber) {
-        this.fiber = fiber;
-    }
+public record FiberLifecycle(Fiber fiber) implements HasLifecycle {
 
     @Override
     public void start() {

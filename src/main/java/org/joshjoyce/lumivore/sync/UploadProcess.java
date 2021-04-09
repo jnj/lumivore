@@ -10,7 +10,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
-
 public class UploadProcess implements Runnable {
     private static final Logger log = Logger.getLogger(UploadProcess.class);
 
@@ -56,26 +55,30 @@ public class UploadProcess implements Runnable {
     }
 
     private class ResultsWorkflow {
+
         ResultsWorkflow(Fiber resultsFiber) {
             channel.subscribe(resultsFiber, msg -> {
-                switch (msg.status) {
-                    case Complete: {
-                        var hash = hashByPath.get(msg.filePath);
-
-                        try {
-                            db.insertUpload(hash, msg.vaultName, msg.archiveId);
-                        } catch (Exception e) {
-                            log.error("Upload file but failed to write to db: " + hash +
-                                      " " + msg.filePath + " " + msg.archiveId);
-                        }
-                    }
-                    return;
-                    case FailedUpload: {
-                        log.error("Failed upload: " + msg.filePath);
-                        log.error(msg.exception.getMessage(), msg.exception);
-                    }
+                switch (msg.status()) {
+                    case Complete -> insertHash(msg);
+                    case FailedUpload -> onUploadFailure(msg);
                 }
             });
+        }
+
+        private void onUploadFailure(UploadAttemptResult msg) {
+            log.error("Failed upload: " + msg.filePath());
+            log.error(msg.exception().getMessage(), msg.exception());
+        }
+
+        private void insertHash(UploadAttemptResult msg) {
+            final var hash = hashByPath.get(msg.filePath());
+
+            try {
+                db.insertUpload(hash, msg.vaultName(), msg.archiveId());
+            } catch (Exception e) {
+                log.error("Upload file but failed to write to db: " + hash +
+                          " " + msg.filePath() + " " + msg.archiveId());
+            }
         }
     }
 }

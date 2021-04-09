@@ -60,7 +60,7 @@ public class UploadMain {
         ResultsWorkflow(Channel<UploadAttemptResult> channel, Fiber fiber) {
             latch = new CountDownLatch(1);
             channel.subscribe(fiber, result -> {
-                if (result.status == UploadAttemptResult.Status.Done) {
+                if (result.isDone()) {
                     latch.countDown();
                 }
            });

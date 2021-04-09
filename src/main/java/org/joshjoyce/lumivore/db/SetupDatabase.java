@@ -8,5 +8,6 @@ public class SetupDatabase {
         db.createIndexes();
         //Set("jpg", "dng", "rw2", "orf").foreach(db.addExtension)
         System.out.println("ok");
+        System.out.println("foo");
     }
 }
