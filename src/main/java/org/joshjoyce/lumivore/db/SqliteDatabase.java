@@ -226,7 +226,7 @@ public class SqliteDatabase {
                 };
 
         List<Sync> as = withQuery("SELECT PATH, SHA1, SYNC_TIME FROM SYNCS WHERE PATH = ? ;", bindVals, mapFn);
-        return as.get(0);
+        return as.isEmpty() ? null : as.get(0);
     }
 
     private <A> List<A> withQuery(String sql, Consumer<PreparedStatement> bindVals, Function<ResultSet, A> mapper) {

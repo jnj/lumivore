@@ -20,7 +20,7 @@ public class UploadMain {
         final var channel = new MemoryChannel<UploadAttemptResult>();
         final var workflow = new ResultsWorkflow(channel, fibers.resultFiber);
 
-        allModules.register(new UploadWorkflow(fibers.runnerFiber, database, channel));
+        allModules.register(new UploadWorkflow(fibers.runnerFiber, fibers.insertsFiber, database, channel));
         allModules.start();
         workflow.waitUntilDone();
         allModules.stop();
@@ -29,10 +29,12 @@ public class UploadMain {
     static class FibersModule extends Module {
         public final Fiber resultFiber;
         public final Fiber runnerFiber;
+        public final Fiber insertsFiber;
 
         FibersModule() {
             resultFiber = register(new ThreadFiber());
             runnerFiber = register(new ThreadFiber());
+            insertsFiber = register(new ThreadFiber());
         }
     }
 
@@ -40,10 +42,10 @@ public class UploadMain {
         private final Fiber fiber;
         private final UploadProcess upload;
 
-        UploadWorkflow(Fiber fiber, SqliteDatabase database, Channel<UploadAttemptResult> channel) {
+        UploadWorkflow(Fiber fiber, Fiber resultsFiber, SqliteDatabase database, Channel<UploadAttemptResult> channel) {
             this.fiber = fiber;
             final var uploader = new GlacierUploader(channel);
-            upload = new UploadProcess("photos", database, uploader, channel, fiber);
+            upload = new UploadProcess("photos", database, uploader, channel, resultsFiber);
             uploader.init();
         }
 

@@ -20,20 +20,31 @@ public class UploadLogImporter {
 
         var lines = Files.readAllLines(new File(filename).toPath());
         lines.forEach(line -> {
-            if (line.contains(key)) {
+            if (line.contains(key) && line.contains("/media")) {
                 var pipeIndex = line.indexOf('|', keyLen);
-                var path = line.substring(keyLen, pipeIndex);
-                var archiveId = line.substring(pipeIndex + 1);
-                var syncs = database.getSync(path);
-                System.out.println(path);
+                var pathStart = line.indexOf("/");
+                if (pathStart >= 0)
+                {
+                    var path = line.substring(pathStart, pipeIndex);
+                    var archiveId = line.substring(pipeIndex + 1);
+                    var syncs = database.getSync(path);
+                    //System.out.println(path);
 
-                if (syncs != null) {
-                    try {
-                        database.insertUpload(syncs.hash, "photos", archiveId);
-                    } catch (Exception e) {
-                        if (!e.getMessage().contains("CONSTRAINT")) {
-                            e.printStackTrace();
+                    if (syncs != null)
+                    {
+                        try
+                        {
+                            database.insertUpload(syncs.hash, "photos", archiveId);
+                        } catch (Exception e)
+                        {
+                            if (!e.getMessage().contains("CONSTRAINT"))
+                            {
+                                e.printStackTrace();
+                            }
                         }
+                    } else
+                    {
+                        System.out.println("NOSYNC|" + path);
                     }
                 }
             }
