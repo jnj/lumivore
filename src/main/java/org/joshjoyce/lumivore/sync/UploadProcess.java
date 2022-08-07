@@ -51,6 +51,7 @@ public class UploadProcess implements Runnable {
             }
         }
 
+        System.out.println("done");
         channel.publish(UploadAttemptResult.done());
     }
 

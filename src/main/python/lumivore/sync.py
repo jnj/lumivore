@@ -17,6 +17,7 @@ def create_arg_parser():
         add_help=True)
     p.add_argument('--db', help='sqlite db file path', default=os.path.join(os.getcwd(), 'photos.db'))
     p.add_argument('--dry', help='dry run', default=False, action='store_const', const=True)
+    p.add_argument('--not-ext', help='extensions to NOT import', nargs='*', default=[])
     return p
 
 
@@ -63,6 +64,7 @@ def main(args):
 
     with LumivoreDao(sqlite3.connect(options.db), log, options.dry) as db:
         extensions = db.get_extensions()
+        extensions = [e for e in extensions if e not in options.not_ext]
         watched_paths = db.get_watched_paths()
         hash_by_path = db.get_hash_by_path()
         for path in watched_paths:
